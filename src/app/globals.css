@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ──────────────────────────────────────────────────────────
+   CineVault — Global Styles & CSS Custom Properties
+   Luxury Cinematic Aesthetic
+   ────────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    /* Core palette tokens */
+    --color-oled: #0b0c10;
+    --color-oled-deep: #0d0e15;
+    --color-navy: #151824;
+    --color-navy-light: #1c2035;
+    --color-gold: #d4af37;
+    --color-gold-light: #e5a93c;
+    --color-amber-glow: #ffbf00;
+    --color-silver: #c0c0c0;
+    --color-silver-light: #e0e0e0;
+
+    /* Semantic tokens */
+    --background: #0b0c10;
+    --foreground: #e0e0e0;
+
+    /* Scrollbar */
+    --scrollbar-thumb: rgba(212, 175, 55, 0.25);
+    --scrollbar-track: #0b0c10;
+  }
+
+  /* Smooth rendering for the cinematic feel */
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-oled text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Selection color */
+  ::selection {
+    background: rgba(212, 175, 55, 0.3);
+    color: #e0e0e0;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(212, 175, 55, 0.4);
+  }
+
+  /* Focus ring global style */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-gold/40 ring-offset-2 ring-offset-oled;
+  }
+}
+
+@layer components {
+  /* ── Card component ─────────────────────────── */
+  .card-cinematic {
+    @apply glass rounded-2xl p-4 transition-all duration-300;
+    @apply hover:shadow-gold-md hover:border-gold/20;
+    @apply hover:-translate-y-0.5;
+  }
+
+  /* ── Gold CTA button ────────────────────────── */
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-2.5;
+    @apply rounded-xl font-medium text-sm;
+    @apply bg-gold-shimmer text-oled;
+    @apply shadow-gold-sm hover:shadow-gold-md;
+    @apply transition-all duration-300;
+    @apply hover:brightness-110 active:scale-[0.97];
+  }
+
+  /* ── Ghost / outline button ─────────────────── */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2;
+    @apply rounded-xl font-medium text-sm;
+    @apply text-silver-light bg-transparent;
+    @apply border border-white/10 hover:border-gold/30;
+    @apply hover:text-gold transition-all duration-200;
+  }
+
+  /* ── Section heading ────────────────────────── */
+  .section-heading {
+    @apply text-2xl md:text-3xl font-bold text-gradient-gold tracking-tight;
+  }
+
+  /* ── Poster card hover overlay ──────────────── */
+  .poster-overlay {
+    @apply absolute inset-0 bg-gradient-to-t from-oled/90 via-oled/40 to-transparent;
+    @apply opacity-0 group-hover:opacity-100 transition-opacity duration-300;
+  }
+}
+
+@layer utilities {
+  /* Animate delay utilities for staggered reveals */
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-400 { animation-delay: 400ms; }
+  .animate-delay-500 { animation-delay: 500ms; }
+
+  /* Hide scrollbar but keep scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
