@@ -139,7 +139,7 @@ export default function ExplorePage() {
     <div className="flex flex-col min-h-screen pb-20">
 
 
-      {!isFiltered && <HeroBanner movies={newReleases as any} genres={genres} />}
+      {!isFiltered && <HeroBanner movies={trendingMovies} genres={genres} />}
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-12 px-4 sm:px-8 mt-12">
         {loading && <div className="text-gold text-sm animate-pulse">Loading content...</div>}
