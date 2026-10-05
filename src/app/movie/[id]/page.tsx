@@ -5,6 +5,7 @@ import MediaActions from "@/components/MediaActions";
 import StreamPlayer from "@/components/StreamPlayer";
 import BackButton from "@/components/BackButton";
 import TrailerSection from "@/components/TrailerSection";
+import PlayerInstructions from "@/components/PlayerInstructions";
 import { Star, Clock, Calendar, Play } from "lucide-react";
 
 export default async function MovieDetailsPage({ params }: { params: { id: string } }) {
@@ -197,6 +198,9 @@ export default async function MovieDetailsPage({ params }: { params: { id: strin
 
         {/* Stream Player */}
         <section>
+          <div className="mb-6 mt-8">
+            <PlayerInstructions />
+          </div>
           <h2 className="section-heading mb-6">Watch Now</h2>
           <StreamPlayer tmdbId={movie.id} mediaType="movie" />
         </section>

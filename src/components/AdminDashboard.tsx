@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Users, UserX, Shield, Activity, Circle, ShieldAlert, Ban, UserCheck, ShieldPlus, ShieldMinus, Bell, Trash2, Edit, Tv, Plus, Loader2, Save } from "lucide-react";
+import { Users, UserX, Shield, Activity, Circle, ShieldAlert, Ban, UserCheck, ShieldPlus, ShieldMinus, Bell, Trash2, Edit, Tv, Plus, Loader2, Save, Info, MonitorPlay } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 
 type Profile = {
@@ -20,7 +20,7 @@ export default function AdminDashboard({ currentUser }: { currentUser: Profile }
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<"users" | "notices" | "tv">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "notices" | "tv" | "player">("users");
 
   // Stats
   const [stats, setStats] = useState({
@@ -154,6 +154,12 @@ export default function AdminDashboard({ currentUser }: { currentUser: Profile }
           className={`flex items-center gap-2 pb-2 whitespace-nowrap -mb-[1px] border-b-2 transition-colors ${activeTab === "notices" ? "border-gold text-gold" : "border-transparent text-gray-400 hover:text-white"}`}
         >
           <Bell size={18} /> Manage Notices
+        </button>
+        <button 
+          onClick={() => setActiveTab("player")} 
+          className={`flex items-center gap-2 pb-2 whitespace-nowrap -mb-[1px] border-b-2 transition-colors ${activeTab === "player" ? "border-gold text-gold" : "border-transparent text-gray-400 hover:text-white"}`}
+        >
+          <MonitorPlay size={18} /> Player Instructions
         </button>
         <button 
           onClick={() => setActiveTab("tv")} 
@@ -336,9 +342,94 @@ export default function AdminDashboard({ currentUser }: { currentUser: Profile }
         </>
       ) : activeTab === "notices" ? (
         <ManageNotices />
+      ) : activeTab === "player" ? (
+        <ManagePlayerInstructions />
       ) : (
         <ManageTVShows />
       )}
+    </div>
+  );
+}
+
+function ManagePlayerInstructions() {
+  const [instruction, setInstruction] = useState("");
+  const [savingInstruction, setSavingInstruction] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchInstruction = async () => {
+      const { data } = await supabase.from('system_messages').select('message_text').eq('message_key', 'player_instruction').single();
+      if (isMounted && data) setInstruction(data.message_text || "");
+    };
+
+    fetchInstruction();
+
+    const messageSubscription = supabase
+      .channel('system_messages_changes_admin')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'system_messages',
+          filter: "message_key=eq.player_instruction"
+        },
+        (payload) => {
+          if (isMounted && payload.new && payload.new.message_text !== undefined) {
+            setInstruction(payload.new.message_text);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(messageSubscription);
+    };
+  }, []);
+
+  const handleSaveInstruction = async () => {
+    setSavingInstruction(true);
+    await supabase.from('system_messages')
+      .update({ message_text: instruction, updated_at: new Date() })
+      .eq('message_key', 'player_instruction');
+    setSavingInstruction(false);
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="bg-white/[0.02] border border-blue-500/20 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+          <MonitorPlay size={100} className="text-blue-500" />
+        </div>
+        <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+          <Info size={18} className="text-blue-400" />
+          Global Player Instructions
+        </h3>
+        <p className="text-sm text-silver-dark mb-4 max-w-2xl relative z-10">
+          This message will be displayed prominently above the video player for all users. Use it to provide guidance on how to use the player, switch servers, or report broken links.
+        </p>
+        <div className="relative z-10 space-y-3">
+          <textarea 
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
+            placeholder="E.g., If the video doesn't load, please try switching servers..."
+            rows={4}
+            className="w-full bg-[#0B0C10] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 resize-none transition-colors"
+          />
+          <div className="flex justify-end">
+            <button 
+              onClick={handleSaveInstruction}
+              disabled={savingInstruction}
+              className="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold px-6 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
+              {savingInstruction ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {savingInstruction ? "Saving..." : "Save Instructions"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -15,16 +15,34 @@ const getEmbedUrl = (url: string | null): string | undefined => {
     }
     
     // YouTube
-    if (url.includes("youtube.com/watch") || url.includes("youtu.be/")) {
-      let videoId = "";
-      if (url.includes("youtu.be/")) {
-        videoId = url.split("youtu.be/")[1]?.split("?")[0];
-      } else {
-        const urlParams = new URL(url).searchParams;
-        videoId = urlParams.get("v") || "";
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      // If already an embed link, just return it
+      if (url.includes("/embed/")) {
+        // Optional: you can append ?autoplay=1 if you want, but returning as is is safest
+        return url;
       }
+
+      let videoId = "";
+      let listId = "";
+
+      try {
+        const urlObj = new URL(url.startsWith("http") ? url : `https://${url}`);
+        if (url.includes("youtu.be/")) {
+          videoId = urlObj.pathname.slice(1);
+        } else {
+          videoId = urlObj.searchParams.get("v") || "";
+        }
+        listId = urlObj.searchParams.get("list") || "";
+      } catch (e) {
+        if (url.includes("youtu.be/")) {
+          videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
+        }
+      }
+
       if (videoId) {
-        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1${listId ? `&list=${listId}` : ''}`;
+      } else if (listId) {
+        return `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=1&rel=0&modestbranding=1`;
       }
     }
     
@@ -51,23 +69,25 @@ const getEmbedUrl = (url: string | null): string | undefined => {
 const formatVideoUrl = (url: string, mode: 'single' | 'playlist'): string => {
   if (!url) return url;
   if (url.includes("youtube.com") || url.includes("youtu.be")) {
-    if (mode === 'playlist' && url.includes("list=")) {
-      let listId = "";
-      try {
-        listId = new URL(url).searchParams.get("list") || "";
-      } catch (e) {}
-      return listId ? `https://www.youtube.com/embed/videoseries?list=${listId}` : url;
-    } else {
+    if (url.includes("/embed/")) return url;
+    
+    try {
+      const urlObj = new URL(url.startsWith("http") ? url : `https://${url}`);
       let videoId = "";
+      let listId = urlObj.searchParams.get("list") || "";
+      
       if (url.includes("youtu.be/")) {
-        videoId = url.split("youtu.be/")[1]?.split("?")[0];
+        videoId = urlObj.pathname.slice(1);
       } else {
-        try {
-          videoId = new URL(url).searchParams.get("v") || "";
-        } catch (e) {}
+        videoId = urlObj.searchParams.get("v") || "";
       }
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
-    }
+
+      if (mode === 'playlist' && listId) {
+        return `https://www.youtube.com/embed/videoseries?list=${listId}`;
+      } else if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}${listId ? `?list=${listId}` : ''}`;
+      }
+    } catch (e) {}
   }
   return url;
 };
@@ -308,7 +328,7 @@ export default function CineVaultPlayerModal({
             };
           });
           
-          const { error } = await supabase.from("global_links").upsert(payload, { onConflict: 'tmdb_id,season_name,episode_number' });
+          const { error } = await supabase.from("global_links").insert(payload);
           if (!error) {
             alert("Batch saved successfully!");
             setStreamUrl(payload[0].stream_url);

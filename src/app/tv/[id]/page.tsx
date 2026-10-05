@@ -6,6 +6,7 @@ import SeasonSelector from "@/components/SeasonSelector";
 import StreamPlayer from "@/components/StreamPlayer";
 import BackButton from "@/components/BackButton";
 import TrailerSection from "@/components/TrailerSection";
+import PlayerInstructions from "@/components/PlayerInstructions";
 import { Star, Tv as TvIcon, Calendar } from "lucide-react";
 
 export default async function TVDetailsPage({ 
@@ -216,6 +217,9 @@ export default async function TVDetailsPage({
 
         {/* Stream Player */}
         <section>
+          <div className="mb-6 mt-8">
+            <PlayerInstructions />
+          </div>
           <h2 className="section-heading mb-6">Watch Now</h2>
           <StreamPlayer tmdbId={tv.id} mediaType="tv" season={season} episode={episode} />
         </section>
