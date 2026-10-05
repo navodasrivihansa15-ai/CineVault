@@ -16,7 +16,8 @@ import {
   Home,
   Compass,
   User,
-  ArrowLeft
+  ArrowLeft,
+  Bell
 } from "lucide-react";
 import AuthModal from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
@@ -75,6 +76,11 @@ function NavbarContent() {
   const [profile, setProfile] = useState<{username: string, avatar_url: string} | null>(null);
   
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  
+  const [isNoticesOpen, setIsNoticesOpen] = useState(false);
+  const [notices, setNotices] = useState<any[]>([]);
+  const noticesRef = useRef<HTMLDivElement>(null);
   
   const [genreSearch, setGenreSearch] = useState("");
   const [isGenreDropdownOpen, setIsGenreDropdownOpen] = useState(false);
@@ -93,10 +99,64 @@ function NavbarContent() {
       if (langRef.current && !langRef.current.contains(event.target as Node)) {
         setIsLanguageDropdownOpen(false);
       }
+      if (noticesRef.current && !noticesRef.current.contains(event.target as Node)) {
+        setIsNoticesOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Fetch Notices
+  useEffect(() => {
+    const fetchNotices = async () => {
+      const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
+      if (data) setNotices(data);
+    };
+    fetchNotices();
+
+    const noticesChannel = supabase.channel('realtime_notices')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notices' }, fetchNotices)
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(noticesChannel);
+    };
+  }, []);
+
+  // Global Unread Chat Badge Realtime Listener
+  useEffect(() => {
+    if (!user) return;
+    
+    const unreadChannel = supabase.channel('global_unread')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages'
+      }, (payload) => {
+        // Only trigger if we are NOT on the chat page right now.
+        if (window.location.pathname !== '/chat') {
+          // If it's a DM for us, or a global message
+          if (!payload.new.is_private || payload.new.recipient_id === user.id) {
+            if (payload.new.user_id !== user.id) {
+              setUnreadChatCount(prev => prev + 1);
+            }
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(unreadChannel);
+    }
+  }, [user]);
+
+  // Reset unread count when visiting chat
+  useEffect(() => {
+    if (pathname === '/chat') {
+      setUnreadChatCount(0);
+    }
+  }, [pathname]);
 
   // Filter State
   const [type, setType] = useState(searchParams.get("type") || "all");
@@ -409,15 +469,62 @@ function NavbarContent() {
               <Search size={22} />
             </button>
 
+            {user && (
+              <Link 
+                href="/chat" 
+                className="relative hidden md:flex text-gray-400 hover:text-[#D4AF37] transition-colors p-2 rounded-full hover:bg-[#D4AF37]/10"
+                title="Chat Hub"
+              >
+                <MessageSquare size={22} />
+                {unreadChatCount > 0 && (
+                  <span className="absolute top-1 right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
+                )}
+              </Link>
+            )}
+
+            {/* NOTICES BELL */}
+            <div className="relative flex items-center" ref={noticesRef}>
+              <button
+                onClick={() => setIsNoticesOpen(!isNoticesOpen)}
+                className="relative text-gray-400 hover:text-[#D4AF37] transition-colors p-2 rounded-full hover:bg-[#D4AF37]/10"
+              >
+                <Bell size={22} />
+                {notices.length > 0 && (
+                  <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#D4AF37]"></span>
+                  </span>
+                )}
+              </button>
+              {isNoticesOpen && (
+                <div className="absolute top-14 right-[-50px] md:right-0 w-80 max-h-[60vh] bg-[#12141D]/95 backdrop-blur-xl border border-white/10 shadow-2xl rounded-xl z-50 overflow-y-auto flex flex-col custom-scrollbar">
+                  <div className="sticky top-0 bg-[#12141D]/95 border-b border-white/10 p-3 text-sm font-bold text-[#D4AF37]">
+                    Global Notices
+                  </div>
+                  <div className="p-2 flex flex-col gap-2">
+                    {notices.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500">No new notices</div>
+                    ) : (
+                      notices.map(notice => (
+                        <div key={notice.id} className={`p-3 rounded-lg border ${notice.type === 'Warning' ? 'border-red-500/30 bg-red-500/10' : notice.type === 'Info' ? 'border-blue-500/30 bg-blue-500/10' : 'border-white/10 bg-white/5'}`}>
+                           <div className="flex justify-between items-start mb-1">
+                             <h4 className="font-bold text-sm text-white">{notice.title}</h4>
+                             <span className="text-[10px] text-gray-400 shrink-0 ml-2">{new Date(notice.created_at).toLocaleDateString()}</span>
+                           </div>
+                           <p className="text-xs text-gray-300">{notice.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {user ? (
               <div className="flex items-center gap-4">
-                <Link 
-                  href="/chat" 
-                  className="hidden md:flex text-gray-400 hover:text-[#D4AF37] transition-colors p-2 rounded-full hover:bg-[#D4AF37]/10"
-                  title="Chat Hub"
-                >
-                  <MessageSquare size={22} />
-                </Link>
                 <Link href="/profile" className="relative group">
                   <UserAvatar
                     src={profile?.avatar_url || null}
@@ -437,6 +544,7 @@ function NavbarContent() {
                     }
                   }}
                   className="hidden md:block text-gray-400 hover:text-[#D4AF37] transition-colors p-2"
+
                   title="Log Out"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
@@ -555,8 +663,14 @@ function NavbarContent() {
             <Compass size={22} />
             <span className="text-[10px] font-medium">Explore</span>
           </Link>
-          <Link href="/chat" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/chat' ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>
+          <Link href="/chat" className={`relative flex flex-col items-center gap-1 transition-colors ${pathname === '/chat' ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>
             <MessageSquare size={22} />
+            {unreadChatCount > 0 && (
+              <span className="absolute top-0 right-3 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-[#0B0C10]"></span>
+              </span>
+            )}
             <span className="text-[10px] font-medium">Chat</span>
           </Link>
           <Link href="/profile" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/profile' ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>

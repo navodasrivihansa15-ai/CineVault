@@ -235,8 +235,8 @@ export async function discoverMedia(
     }
 
     const [movieRes, tvRes] = await Promise.all([
-      tmdbFetch("/discover/movie", movieParams, revalidate),
-      tmdbFetch("/discover/tv", tvParams, revalidate)
+      tmdbFetch("/discover/movie", movieParams, revalidate) as Promise<any>,
+      tmdbFetch("/discover/tv", tvParams, revalidate) as Promise<any>
     ]);
 
     const combinedResults = [

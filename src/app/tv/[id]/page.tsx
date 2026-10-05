@@ -29,8 +29,8 @@ export default async function TVDetailsPage({
   const writers = crew.filter((c: any) => ["Screenplay", "Writer", "Story", "Writing"].includes(c.job));
   
   // For TV shows, creators are often listed separately
-  if (tv.created_by) {
-    tv.created_by.forEach((creator: any) => {
+  if ((tv as any).created_by) {
+    (tv as any).created_by.forEach((creator: any) => {
       if (!writers.find((w: any) => w.id === creator.id)) {
         writers.push({ ...creator, job: "Creator" });
       }

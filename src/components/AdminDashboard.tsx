@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Users, UserX, Shield, Activity, Circle, ShieldAlert, Ban, UserCheck, ShieldPlus, ShieldMinus } from "lucide-react";
+import { Users, UserX, Shield, Activity, Circle, ShieldAlert, Ban, UserCheck, ShieldPlus, ShieldMinus, Bell, Trash2, Edit } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 
 type Profile = {
@@ -19,6 +19,8 @@ export default function AdminDashboard({ currentUser }: { currentUser: Profile }
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  
+  const [activeTab, setActiveTab] = useState<"users" | "notices">("users");
 
   // Stats
   const [stats, setStats] = useState({
@@ -133,15 +135,32 @@ export default function AdminDashboard({ currentUser }: { currentUser: Profile }
 
   return (
     <div className="space-y-8 animate-fade-up">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <h2 className="text-2xl font-bold text-white flex items-center gap-2 border-l-4 border-gold pl-4">
           <ShieldAlert className="text-gold" size={24} /> 
           Admin Control Center
         </h2>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+      <div className="flex items-center gap-6">
+        <button 
+          onClick={() => setActiveTab("users")} 
+          className={`flex items-center gap-2 pb-2 -mb-[1px] border-b-2 transition-colors ${activeTab === "users" ? "border-gold text-gold" : "border-transparent text-gray-400 hover:text-white"}`}
+        >
+          <Users size={18} /> User Management
+        </button>
+        <button 
+          onClick={() => setActiveTab("notices")} 
+          className={`flex items-center gap-2 pb-2 -mb-[1px] border-b-2 transition-colors ${activeTab === "notices" ? "border-gold text-gold" : "border-transparent text-gray-400 hover:text-white"}`}
+        >
+          <Bell size={18} /> Manage Notices
+        </button>
+      </div>
+
+      {activeTab === "users" ? (
+        <>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 flex flex-col gap-2 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 transition-transform group-hover:scale-110">
             <Users size={64} className="text-white" />
@@ -307,6 +326,121 @@ export default function AdminDashboard({ currentUser }: { currentUser: Profile }
             </div>
           )}
         </div>
+      </div>
+        </>
+      ) : (
+        <ManageNotices />
+      )}
+    </div>
+  );
+}
+
+function ManageNotices() {
+  const [notices, setNotices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [type, setType] = useState("Info");
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const fetchNotices = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
+    if (data) setNotices(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchNotices();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingId) {
+      await supabase.from('notices').update({ title, message, type }).eq('id', editingId);
+    } else {
+      await supabase.from('notices').insert([{ title, message, type }]);
+    }
+    setTitle("");
+    setMessage("");
+    setType("Info");
+    setEditingId(null);
+    fetchNotices();
+  };
+
+  const handleEdit = (notice: any) => {
+    setTitle(notice.title);
+    setMessage(notice.message);
+    setType(notice.type);
+    setEditingId(notice.id);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this notice?")) {
+      await supabase.from('notices').delete().eq('id', id);
+      fetchNotices();
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 shadow-xl">
+        <h3 className="text-lg font-bold text-white mb-4">{editingId ? "Edit Notice" : "Create New Notice"}</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Title</label>
+              <input type="text" required value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-[#0B0C10] border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-gold transition-colors" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Type (Color)</label>
+              <select value={type} onChange={e => setType(e.target.value)} className="w-full bg-[#0B0C10] border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-gold transition-colors">
+                <option value="Info">Info (Blue)</option>
+                <option value="Warning">Warning (Red)</option>
+                <option value="Success">Success (Green)</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Message</label>
+            <textarea required value={message} onChange={e => setMessage(e.target.value)} rows={3} className="w-full bg-[#0B0C10] border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-gold resize-none transition-colors" />
+          </div>
+          <div className="flex justify-end gap-3">
+            {editingId && (
+              <button type="button" onClick={() => { setEditingId(null); setTitle(""); setMessage(""); setType("Info"); }} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
+            )}
+            <button type="submit" className="bg-gold hover:bg-[#F3E5AB] text-black font-bold px-6 py-2 rounded-lg transition-colors shadow-lg shadow-gold/20">
+              {editingId ? "Update Notice" : "Post Global Notice"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+        {loading ? (
+          <div className="p-8 text-center text-gray-400">Loading notices...</div>
+        ) : notices.length === 0 ? (
+          <div className="p-8 text-center text-gray-400">No notices found. Create one above!</div>
+        ) : (
+          <div className="divide-y divide-white/10">
+            {notices.map(notice => (
+              <div key={notice.id} className="p-4 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center hover:bg-white/[0.01] transition-colors">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${notice.type === 'Warning' ? 'bg-red-500/20 text-red-400' : notice.type === 'Success' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>{notice.type}</span>
+                    <h4 className="font-bold text-white text-sm">{notice.title}</h4>
+                  </div>
+                  <p className="text-sm text-gray-400">{notice.message}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-gray-500 mr-2">{new Date(notice.created_at).toLocaleDateString()}</span>
+                  <button onClick={() => handleEdit(notice)} className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors bg-white/5 hover:bg-white/10 rounded-md"><Edit size={16} /></button>
+                  <button onClick={() => handleDelete(notice.id)} className="p-1.5 text-gray-400 hover:text-red-400 transition-colors bg-white/5 hover:bg-white/10 rounded-md"><Trash2 size={16} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

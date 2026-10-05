@@ -187,7 +187,7 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
             </div>
 
             {/* Watch Now */}
-            <Link href={`/${movie.media_type || 'movie'}/${movie.id}`} className="btn-gold group flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-bold">
+            <Link href={`/${(movie as any).media_type || 'movie'}/${movie.id}`} className="btn-gold group flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-bold">
               <Play
                 size={18}
                 className="transition-transform duration-200 group-hover:scale-110"

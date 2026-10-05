@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
-import { Send, Users, MessageSquare, Crown, ShieldCheck, Loader2, ChevronDown, Search } from "lucide-react";
+import { Send, Users, MessageSquare, Crown, ShieldCheck, Loader2, ChevronDown, Search, Smile, Pin } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 
 type Profile = {
@@ -23,6 +23,8 @@ type UnifiedMessage = {
   is_private: boolean;
   recipient_id: string | null;
   profiles: Profile;
+  is_pinned?: boolean;
+  reactions?: Record<string, string[]>;
 };
 
 export default function ChatPage() {
@@ -39,6 +41,14 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [currentUserRole, setCurrentUserRole] = useState<"user" | "admin" | "founder">("user");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [activeReactionMessageId, setActiveReactionMessageId] = useState<string | null>(null);
+  const pressTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
+  const ALL_EMOJIS = ["😀","😂","🥰","😎","🤔","😢","😡","👍","❤️","🔥","🎉","✨"];
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -53,17 +63,33 @@ export default function ChatPage() {
     }
   }, [activeMainTab, isUserMenuOpen, activeAdminId]);
 
+  // Authentication Check for Loading State
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession?.user) {
+          const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", currentSession.user.id).single();
+          if (myProfile) setCurrentUserRole(myProfile.role);
+        }
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
   // Authentication Guard
   useEffect(() => {
-    if (!session && !user) {
+    if (!isAuthLoading && !session && !user) {
       alert("You must be logged in to access the Chat Hub.");
       router.push("/");
     }
-  }, [user, session, router]);
+  }, [user, session, router, isAuthLoading]);
 
   // Fetch Admins & Initial Messages
   useEffect(() => {
-    if (!user) return;
+    if (isAuthLoading || !user) return;
 
     const fetchData = async () => {
       setLoading(true);
@@ -122,14 +148,34 @@ export default function ChatPage() {
             const newMsg = { ...payload.new, profiles: profile } as UnifiedMessage;
             
             if (!newMsg.is_private) {
-              // It's a global message
-              setGlobalMessages((prev) => [...prev, newMsg]);
+              setGlobalMessages((prev) => {
+                // Check if updating an existing message (e.g., reaction)
+                const exists = prev.find(m => m.id === newMsg.id);
+                if (exists) return prev.map(m => m.id === newMsg.id ? newMsg : m);
+                return [...prev, newMsg];
+              });
             } else {
-              // It's a DM, add it to DM state (we will filter it during render if needed, or check if it belongs to current DM)
-              setDirectMessages((prev) => [...prev, newMsg]);
+              setDirectMessages((prev) => {
+                const exists = prev.find(m => m.id === newMsg.id);
+                if (exists) return prev.map(m => m.id === newMsg.id ? newMsg : m);
+                return [...prev, newMsg];
+              });
             }
             scrollToBottom();
           }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages" },
+        (payload) => {
+           // Handle reaction/pinned updates
+           const updated = payload.new as UnifiedMessage;
+           if (!updated.is_private) {
+              setGlobalMessages(prev => prev.map(m => m.id === updated.id ? { ...m, reactions: updated.reactions, is_pinned: updated.is_pinned } : m));
+           } else {
+              setDirectMessages(prev => prev.map(m => m.id === updated.id ? { ...m, reactions: updated.reactions } : m));
+           }
         }
       )
       .subscribe();
@@ -142,7 +188,7 @@ export default function ChatPage() {
 
   // Fetch Direct Messages when selecting an admin
   useEffect(() => {
-    if (!user || !activeAdminId || activeMainTab !== "dm") return;
+    if (isAuthLoading || !user || !activeAdminId || activeMainTab !== "dm") return;
 
     const fetchDMs = async () => {
       const { data } = await supabase
@@ -178,11 +224,21 @@ export default function ChatPage() {
       return;
     }
 
+    let finalContent = newMessage.trim();
+    let isPinned = false;
+    
+    if (finalContent.startsWith('#') && activeMainTab === 'global' && (currentUserRole === 'admin' || currentUserRole === 'founder')) {
+      isPinned = true;
+      finalContent = finalContent.substring(1).trim();
+      if (!finalContent) return; // Don't send empty pinned messages
+    }
+
     const messagePayload = {
-      content: newMessage.trim(),
+      content: finalContent,
       user_id: currentUser.id,
       is_private: activeMainTab === 'dm', // true if in DM tab, false if global
-      recipient_id: activeMainTab === 'dm' ? activeAdminId : null
+      recipient_id: activeMainTab === 'dm' ? activeAdminId : null,
+      is_pinned: isPinned
     };
 
     setNewMessage(""); // Optimistic clear
@@ -201,9 +257,143 @@ export default function ChatPage() {
     return null;
   };
 
+  const parseMentions = (content: string) => {
+    const parts = content.split(/(\s+)/);
+    return parts.map((part, i) => {
+      if (part.startsWith('@') && part.length > 1) {
+        return <span key={i} className="text-[#D4AF37] font-semibold">{part}</span>;
+      }
+      return part;
+    });
+  };
+
+  const handleTouchStart = (msgId: string) => {
+    pressTimer.current = setTimeout(() => {
+      setActiveReactionMessageId(msgId);
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, msgId: string) => {
+    e.preventDefault();
+    setActiveReactionMessageId(msgId);
+  };
+
+  const handleReaction = async (msgId: string, emoji: string) => {
+    setActiveReactionMessageId(null);
+    if (!user) return;
+    
+    // Optimistic update
+    const updateMsg = (msgs: UnifiedMessage[]) => msgs.map(m => {
+      if (m.id === msgId) {
+        const reactions = m.reactions || {};
+        const users = reactions[emoji] || [];
+        if (!users.includes(user.id)) {
+          return { ...m, reactions: { ...reactions, [emoji]: [...users, user.id] } };
+        } else {
+           const newUsers = users.filter(uid => uid !== user.id);
+           const newReactions = { ...reactions, [emoji]: newUsers };
+           if (newUsers.length === 0) delete newReactions[emoji];
+           return { ...m, reactions: newReactions };
+        }
+      }
+      return m;
+    });
+    setGlobalMessages(updateMsg);
+    setDirectMessages(updateMsg);
+
+    const { data } = await supabase.from('messages').select('reactions').eq('id', msgId).single();
+    if (data) {
+       const existingReactions = data.reactions || {};
+       const users = existingReactions[emoji] || [];
+       if (!users.includes(user.id)) {
+         existingReactions[emoji] = [...users, user.id];
+       } else {
+         existingReactions[emoji] = users.filter((uid: string) => uid !== user.id);
+         if (existingReactions[emoji].length === 0) delete existingReactions[emoji];
+       }
+       await supabase.from('messages').update({ reactions: existingReactions }).eq('id', msgId);
+    }
+  };
+
+  const renderMessage = (msg: UnifiedMessage) => {
+    const isMe = msg.user_id === user?.id;
+    return (
+      <div 
+        key={msg.id} 
+        className={`flex gap-4 relative ${isMe ? "flex-row-reverse" : ""}`}
+        onTouchStart={() => handleTouchStart(msg.id)}
+        onTouchEnd={handleTouchEnd}
+        onContextMenu={(e) => handleContextMenu(e, msg.id)}
+      >
+        <div className="relative w-10 h-10 rounded-full shrink-0 border border-white/10 overflow-hidden bg-[#0B0C10]">
+          <UserAvatar src={msg.profiles?.avatar_url} />
+        </div>
+        <div className={`max-w-[70%] flex flex-col relative ${isMe ? "items-end" : "items-start"}`}>
+          {activeReactionMessageId === msg.id && (
+            <div className={`absolute -top-12 z-50 bg-[#12141D] border border-white/10 rounded-full px-2 py-1 shadow-2xl flex gap-1 animate-in fade-in zoom-in duration-200 ${isMe ? "right-0" : "left-0"}`}>
+               {EMOJIS.map(emoji => (
+                 <button 
+                   key={emoji} 
+                   className="hover:scale-125 hover:bg-white/10 transition-all p-1.5 rounded-full text-lg"
+                   onClick={() => handleReaction(msg.id, emoji)}
+                 >
+                   {emoji}
+                 </button>
+               ))}
+            </div>
+          )}
+
+          <div className="flex items-baseline gap-2 mb-1">
+            <span className="text-sm font-bold text-white flex items-center shadow-black drop-shadow-md">
+              {msg.profiles?.full_name || msg.profiles?.username || "Unknown"}
+              {renderBadge(msg.profiles?.role)}
+            </span>
+            <span className="text-xs text-gray-500">
+              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+          <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-xl ${isMe ? (msg.is_private ? "bg-blue-600 text-white rounded-tr-none font-medium" : "bg-gradient-to-br from-[#D4AF37] to-[#B3932F] text-[#0B0C10] rounded-tr-none font-medium") : "bg-white/10 border border-white/5 text-white rounded-tl-none"}`}>
+            {parseMentions(msg.content)}
+          </div>
+          
+          {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+            <div className={`flex flex-wrap gap-1 mt-1 ${isMe ? "justify-end" : "justify-start"}`}>
+              {Object.entries(msg.reactions).map(([emoji, users]) => (
+                <button key={emoji} className={`bg-black/50 border ${users.includes(user?.id || '') ? 'border-[#D4AF37]' : 'border-white/10'} rounded-full px-2 py-0.5 text-xs text-white flex items-center gap-1 cursor-pointer`} onClick={() => handleReaction(msg.id, emoji)}>
+                  {emoji} <span className="text-[10px] opacity-70">{users.length}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  if (isAuthLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0B0C10]">
+        <div className="flex flex-col items-center gap-6 animate-pulse">
+          <div className="relative">
+            <div className="absolute inset-0 bg-[#D4AF37] blur-xl opacity-20 rounded-full" />
+            <Loader2 className="relative animate-spin text-[#D4AF37] w-12 h-12" />
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <h2 className="text-[#D4AF37] font-bold tracking-widest uppercase text-sm">CineVault Secure</h2>
+            <p className="text-gray-500 text-xs tracking-wider">Establishing Connection...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B0C10] pb-20 pt-24">
+      <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#0B0C10]">
         <Loader2 className="animate-spin text-[#D4AF37]" size={48} />
       </div>
     );
@@ -214,6 +404,8 @@ export default function ChatPage() {
     (msg.user_id === user?.id && msg.recipient_id === activeAdminId) ||
     (msg.user_id === activeAdminId && msg.recipient_id === user?.id)
   );
+
+  const pinnedMessage = globalMessages.slice().reverse().find(m => m.is_pinned);
 
   return (
     <div className="fixed inset-0 z-0 flex flex-col pt-14 md:pt-24 pb-16 md:pb-0 bg-[#0B0C10] overflow-hidden">
@@ -336,36 +528,24 @@ export default function ChatPage() {
           )}
         </div>
 
+        {/* Pinned Message */}
+        {activeMainTab === "global" && pinnedMessage && (
+          <div className="flex items-center gap-3 p-3 bg-[#12141D]/90 backdrop-blur-md border-b border-[#D4AF37]/50 text-white/80 cursor-pointer shadow-md w-full flex-shrink-0 z-10 border-l-4 border-l-[#D4AF37]">
+            <Pin size={18} className="text-[#D4AF37] shrink-0" />
+            <div className="flex-1 truncate text-sm">
+              <span className="font-bold text-[#D4AF37] mr-2">{pinnedMessage.profiles?.full_name || pinnedMessage.profiles?.username}:</span>
+              {parseMentions(pinnedMessage.content)}
+            </div>
+          </div>
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 custom-scrollbar">
             {activeMainTab === "global" ? (
               globalMessages.length === 0 ? (
                 <div className="text-center text-gray-500 mt-10">Welcome to the Global Community! Be the first to say hello.</div>
               ) : (
-                globalMessages.map((msg) => {
-                  const isMe = msg.user_id === user?.id;
-                  return (
-                    <div key={msg.id} className={`flex gap-4 ${isMe ? "flex-row-reverse" : ""}`}>
-                      <div className="relative w-10 h-10 rounded-full shrink-0 border border-white/10 overflow-hidden bg-[#0B0C10]">
-                        <UserAvatar src={msg.profiles?.avatar_url} />
-                      </div>
-                      <div className={`max-w-[70%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                        <div className="flex items-baseline gap-2 mb-1">
-                          <span className="text-sm font-bold text-white flex items-center shadow-black drop-shadow-md">
-                            {msg.profiles?.full_name || msg.profiles?.username || "Unknown"}
-                            {renderBadge(msg.profiles?.role)}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-xl ${isMe ? "bg-gradient-to-br from-[#D4AF37] to-[#B3932F] text-[#0B0C10] rounded-tr-none font-medium" : "bg-white/10 border border-white/5 text-white rounded-tl-none"}`}>
-                          {msg.content}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
+                globalMessages.map(renderMessage)
               )
             ) : (
               !activeAdminId ? (
@@ -376,30 +556,7 @@ export default function ChatPage() {
               ) : currentDirectMessages.length === 0 ? (
                 <div className="text-center text-gray-500 mt-10">No messages yet. Send a message to start the private thread.</div>
               ) : (
-                currentDirectMessages.map((msg) => {
-                  const isMe = msg.user_id === user?.id;
-                  return (
-                    <div key={msg.id} className={`flex gap-4 ${isMe ? "flex-row-reverse" : ""}`}>
-                      <div className="relative w-10 h-10 rounded-full shrink-0 border border-white/10 overflow-hidden bg-[#0B0C10]">
-                        <UserAvatar src={msg.profiles?.avatar_url} />
-                      </div>
-                      <div className={`max-w-[70%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                        <div className="flex items-baseline gap-2 mb-1">
-                          <span className="text-sm font-bold text-white flex items-center shadow-black drop-shadow-md">
-                            {msg.profiles?.full_name || msg.profiles?.username || "Unknown"}
-                            {renderBadge(msg.profiles?.role)}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-xl ${isMe ? "bg-blue-600 text-white rounded-tr-none font-medium" : "bg-white/10 border border-white/5 text-white rounded-tl-none"}`}>
-                          {msg.content}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
+                currentDirectMessages.map(renderMessage)
               )
             )}
             <div ref={messagesEndRef} className="shrink-0" />
@@ -409,6 +566,32 @@ export default function ChatPage() {
           {(activeMainTab === "global" || (activeMainTab === "dm" && activeAdminId)) && (
             <div className="p-3 md:p-4 border-t border-white/10 bg-[#0B0C10] flex-shrink-0 w-full z-10">
               <form onSubmit={handleSendMessage} className="flex items-end gap-2 md:gap-3 max-w-4xl mx-auto">
+                <div className="relative shrink-0 flex items-center justify-center">
+                  <button 
+                    type="button"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="p-2 md:p-3 text-gray-400 hover:text-[#D4AF37] transition-colors"
+                  >
+                    <Smile className="w-5 h-5 md:w-6 md:h-6" />
+                  </button>
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full mb-2 left-0 bg-[#12141D] border border-white/10 rounded-xl p-3 shadow-2xl z-50 grid grid-cols-4 gap-2 w-48">
+                      {ALL_EMOJIS.map(emoji => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className="hover:bg-white/10 p-1.5 rounded text-xl"
+                          onClick={() => {
+                            setNewMessage(prev => prev + emoji);
+                            setShowEmojiPicker(false);
+                          }}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <textarea
                   ref={messageInputRef}
                   value={newMessage}

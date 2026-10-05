@@ -112,7 +112,7 @@ export default async function DiscoverPage({
                     posterPath={item.posterPath}
                     rating={item.rating}
                     year={item.year}
-                    mediaType={item.mediaType as "movie" | "tv" | "person"}
+                    mediaType={item.mediaType as "movie" | "tv"}
                     className="w-full"
                   />
                 </Link>
