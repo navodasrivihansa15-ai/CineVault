@@ -419,7 +419,6 @@ export default function ChatPage() {
               </form>
             </div>
           )}
-        </div>
       </div>
     </div>
   );
