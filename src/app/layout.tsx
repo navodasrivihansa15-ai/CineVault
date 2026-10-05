@@ -49,14 +49,6 @@ export const metadata: Metadata = {
       "Track, rate, and organize your movie collection with a luxury cinematic experience.",
     siteName: "CineVault",
   },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "CineVault",
-  },
-  icons: {
-    apple: "/icon-512x512.png",
-  },
 };
 
 export const viewport: Viewport = {
