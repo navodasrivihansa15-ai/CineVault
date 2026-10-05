@@ -80,7 +80,7 @@ export default async function SearchPage({
   };
 
   return (
-    <div className="flex flex-col min-h-screen pb-20 pt-32">
+    <div className="flex flex-col min-h-screen pb-20">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Header */}

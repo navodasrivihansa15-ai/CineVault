@@ -2,9 +2,12 @@
 
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Calendar } from "lucide-react";
 import { MEDIA_TYPES, GENRES } from "./Navbar";
 import { LANGUAGES } from "@/lib/languages";
+
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: currentYear - 1970 + 1 }, (_, i) => currentYear - i);
 
 function MobileDropdownFiltersContent() {
   const router = useRouter();
@@ -13,8 +16,9 @@ function MobileDropdownFiltersContent() {
   const type = searchParams.get("type") || "all";
   const genre = searchParams.get("genre") || "";
   const lang = searchParams.get("lang") || "";
+  const year = searchParams.get("year") || "";
 
-  const [activeDropdown, setActiveDropdown] = useState<"type" | "genre" | "lang" | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<"type" | "genre" | "lang" | "year" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,17 +35,18 @@ function MobileDropdownFiltersContent() {
     let newType = type;
     let newGenre = genre;
     let newLang = lang;
+    let newYear = year;
 
     if (key === "type") newType = value;
     if (key === "genre") newGenre = value;
     if (key === "lang") newLang = value;
+    if (key === "year") newYear = value;
 
     const newParams = new URLSearchParams();
     if (newType && newType !== "all") newParams.set("type", newType);
     if (newGenre) newParams.set("genre", newGenre);
     if (newLang) newParams.set("lang", newLang);
-    const year = searchParams.get("year");
-    if (year) newParams.set("year", year);
+    if (newYear) newParams.set("year", newYear);
 
     setActiveDropdown(null);
     router.push(`/explore?${newParams.toString()}`);
@@ -65,34 +70,49 @@ function MobileDropdownFiltersContent() {
     return match ? match.name : "Lang: All";
   };
 
+  const getYearLabel = () => {
+    if (!year) return "Year";
+    return year;
+  };
+
   return (
     <div className="fixed top-14 w-full z-40 bg-[#0B0C10]/95 backdrop-blur-xl border-b border-white/10 md:hidden" ref={containerRef}>
-      <div className="grid grid-cols-3 gap-2 p-2">
+      <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide p-2 w-full">
         {/* Type Button */}
         <button 
           onClick={() => setActiveDropdown(activeDropdown === "type" ? null : "type")}
-          className={`flex items-center justify-between py-2 px-3 rounded-lg border text-xs font-medium transition-all ${activeDropdown === "type" ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]" : type !== "all" ? "bg-[#D4AF37] text-black border-[#D4AF37]" : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"}`}
+          className={`shrink-0 flex items-center justify-between py-2 px-3 rounded-lg border text-xs font-medium transition-all ${activeDropdown === "type" ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]" : type !== "all" ? "bg-[#D4AF37] text-black border-[#D4AF37]" : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"}`}
         >
           <span className="truncate">{getTypeLabel()}</span>
-          <ChevronDown size={14} className={`shrink-0 transition-transform ${activeDropdown === "type" ? "rotate-180" : ""}`} />
+          <ChevronDown size={14} className={`shrink-0 ml-1 transition-transform ${activeDropdown === "type" ? "rotate-180" : ""}`} />
         </button>
 
         {/* Category (Genre) Button */}
         <button 
           onClick={() => setActiveDropdown(activeDropdown === "genre" ? null : "genre")}
-          className={`flex items-center justify-between py-2 px-3 rounded-lg border text-xs font-medium transition-all ${activeDropdown === "genre" ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]" : genre !== "" ? "bg-[#D4AF37] text-black border-[#D4AF37]" : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"}`}
+          className={`shrink-0 flex items-center justify-between py-2 px-3 rounded-lg border text-xs font-medium transition-all ${activeDropdown === "genre" ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]" : genre !== "" ? "bg-[#D4AF37] text-black border-[#D4AF37]" : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"}`}
         >
           <span className="truncate">{getGenreLabel()}</span>
-          <ChevronDown size={14} className={`shrink-0 transition-transform ${activeDropdown === "genre" ? "rotate-180" : ""}`} />
+          <ChevronDown size={14} className={`shrink-0 ml-1 transition-transform ${activeDropdown === "genre" ? "rotate-180" : ""}`} />
         </button>
 
         {/* Language Button */}
         <button 
           onClick={() => setActiveDropdown(activeDropdown === "lang" ? null : "lang")}
-          className={`flex items-center justify-between py-2 px-3 rounded-lg border text-xs font-medium transition-all ${activeDropdown === "lang" ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]" : lang !== "" ? "bg-[#D4AF37] text-black border-[#D4AF37]" : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"}`}
+          className={`shrink-0 flex items-center justify-between py-2 px-3 rounded-lg border text-xs font-medium transition-all ${activeDropdown === "lang" ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]" : lang !== "" ? "bg-[#D4AF37] text-black border-[#D4AF37]" : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"}`}
         >
           <span className="truncate">{getLangLabel()}</span>
-          <ChevronDown size={14} className={`shrink-0 transition-transform ${activeDropdown === "lang" ? "rotate-180" : ""}`} />
+          <ChevronDown size={14} className={`shrink-0 ml-1 transition-transform ${activeDropdown === "lang" ? "rotate-180" : ""}`} />
+        </button>
+
+        {/* Year Button */}
+        <button 
+          onClick={() => setActiveDropdown(activeDropdown === "year" ? null : "year")}
+          className={`shrink-0 flex items-center justify-between py-2 px-3 rounded-lg border text-xs font-medium transition-all ${activeDropdown === "year" ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]" : year !== "" ? "bg-[#D4AF37] text-black border-[#D4AF37]" : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"}`}
+        >
+          <Calendar size={14} className="shrink-0 mr-1.5" />
+          <span className="truncate">{getYearLabel()}</span>
+          <ChevronDown size={14} className={`shrink-0 ml-1 transition-transform ${activeDropdown === "year" ? "rotate-180" : ""}`} />
         </button>
       </div>
 
@@ -131,7 +151,7 @@ function MobileDropdownFiltersContent() {
                   All Languages
                   {lang === "" && <Check size={16} />}
                 </button>
-                {LANGUAGES.map(l => (
+                {LANGUAGES.filter(l => l.code !== "").map(l => (
                   <button
                     key={l.code}
                     onClick={() => handleFilterChange("lang", l.code)}
@@ -139,6 +159,28 @@ function MobileDropdownFiltersContent() {
                   >
                     {l.name}
                     {lang === l.code && <Check size={16} />}
+                  </button>
+                ))}
+              </>
+            )}
+
+            {activeDropdown === "year" && (
+              <>
+                <button
+                  onClick={() => handleFilterChange("year", "")}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors ${year === "" ? "bg-[#D4AF37]/10 text-[#D4AF37]" : "text-gray-300 hover:bg-white/5"}`}
+                >
+                  All Years
+                  {year === "" && <Check size={16} />}
+                </button>
+                {YEARS.map(y => (
+                  <button
+                    key={y}
+                    onClick={() => handleFilterChange("year", y.toString())}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors ${year === y.toString() ? "bg-[#D4AF37]/10 text-[#D4AF37]" : "text-gray-300 hover:bg-white/5"}`}
+                  >
+                    {y}
+                    {year === y.toString() && <Check size={16} />}
                   </button>
                 ))}
               </>

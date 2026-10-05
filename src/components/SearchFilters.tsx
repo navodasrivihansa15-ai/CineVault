@@ -54,45 +54,58 @@ export default function SearchFilters() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-4 mb-8 bg-[#0B0C10]/50 p-4 rounded-xl border border-white/10">
-      <div className="text-sm font-medium text-gray-400 mr-2 w-full md:w-auto mb-2 md:mb-0">Filter By:</div>
+    <div className="flex flex-row overflow-x-auto whitespace-nowrap scrollbar-hide w-full gap-2 py-2 mb-4 md:mb-8 md:flex-wrap md:items-center md:gap-4 md:bg-[#0B0C10]/50 md:p-4 md:rounded-xl md:border md:border-white/10">
+      <div className="text-sm font-medium text-gray-400 mr-2 hidden md:block">Filter By:</div>
       
       {/* Type */}
-      <div className="relative w-40">
-        <select
-          value={type}
-          onChange={(e) => handleFilterChange("type", e.target.value)}
-          className="w-full appearance-none rounded-lg border border-white/10 bg-[#0B0C10] py-2 pl-4 pr-10 text-sm font-medium text-gray-300 outline-none transition-all hover:border-[#D4AF37] focus:border-[#D4AF37] cursor-pointer"
+      {[
+        { label: "All", value: "all" },
+        { label: "Movies", value: "movie" },
+        { label: "TV Shows", value: "tv" },
+      ].map((t) => (
+        <button
+          key={t.value}
+          onClick={() => handleFilterChange("type", t.value)}
+          className={`px-4 py-1.5 md:py-2 md:px-6 rounded-full md:rounded-lg text-sm md:text-base font-medium transition-colors flex-shrink-0 ${
+            type === t.value
+              ? "bg-[#D4AF37] text-black"
+              : "bg-white/5 text-white/70 border border-white/10 hover:text-white"
+          }`}
         >
-          <option value="all">All</option>
-          <option value="movie">Movies</option>
-          <option value="tv">TV Shows</option>
-        </select>
-        <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#D4AF37] pointer-events-none" />
-      </div>
+          {t.label}
+        </button>
+      ))}
 
       {/* Year */}
-      <div className="relative w-40">
+      <div className="relative flex-shrink-0">
         <select
           value={year}
           onChange={(e) => handleFilterChange("year", e.target.value)}
-          className="w-full appearance-none rounded-lg border border-white/10 bg-[#0B0C10] py-2 pl-4 pr-10 text-sm font-medium text-gray-300 outline-none transition-all hover:border-[#D4AF37] focus:border-[#D4AF37] cursor-pointer"
+          className={`appearance-none outline-none transition-all cursor-pointer flex-shrink-0 px-4 py-1.5 pr-8 md:py-2 md:pl-4 md:pr-10 rounded-full md:rounded-lg text-sm md:text-base font-medium ${
+            year !== ""
+              ? "bg-[#D4AF37] text-black border-[#D4AF37]"
+              : "bg-white/5 text-white/70 border border-white/10 hover:text-white"
+          }`}
         >
-          <option value="">Any Year</option>
-          {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+          <option value="" className="bg-[#0B0C10] text-gray-300">Any Year</option>
+          {YEARS.map(y => <option key={y} value={y} className="bg-[#0B0C10] text-gray-300">{y}</option>)}
         </select>
-        <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#D4AF37] pointer-events-none" />
+        <ChevronDown size={16} className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${year !== "" ? "text-black" : "text-[#D4AF37]"}`} />
       </div>
 
       {/* Language */}
-      <div className="relative w-48" ref={langRef}>
+      <div className="relative flex-shrink-0" ref={langRef}>
         <button
           type="button"
           onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-          className="w-full flex items-center justify-between rounded-lg border border-white/10 bg-[#0B0C10] py-2 pl-4 pr-3 text-sm font-medium text-gray-300 outline-none transition-all hover:border-[#D4AF37] focus:border-[#D4AF37] cursor-pointer"
+          className={`flex items-center justify-between outline-none transition-all cursor-pointer flex-shrink-0 px-4 py-1.5 md:py-2 md:px-4 rounded-full md:rounded-lg text-sm md:text-base font-medium ${
+            lang !== ""
+              ? "bg-[#D4AF37] text-black border-[#D4AF37]"
+              : "bg-white/5 text-white/70 border border-white/10 hover:text-white"
+          }`}
         >
           <span className="truncate">{LANGUAGES.find((l) => l.code === lang)?.name || "All Languages"}</span>
-          <ChevronDown size={16} className="text-[#D4AF37] shrink-0 ml-2" />
+          <ChevronDown size={16} className={`shrink-0 ml-2 ${lang !== "" ? "text-black" : "text-[#D4AF37]"}`} />
         </button>
 
         {isLanguageDropdownOpen && (

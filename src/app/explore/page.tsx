@@ -79,7 +79,7 @@ export default async function DiscoverPage({
   };
 
   return (
-    <div className="flex flex-col min-h-screen pb-20 pt-28">
+    <div className="flex flex-col min-h-screen pb-20">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Header */}

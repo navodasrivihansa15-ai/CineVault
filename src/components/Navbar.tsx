@@ -75,23 +75,6 @@ function NavbarContent() {
   const [profile, setProfile] = useState<{username: string, avatar_url: string} | null>(null);
   
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-  const [mobileSearchQuery, setMobileSearchQuery] = useState("");
-  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isMobileSearchOpen && mobileSearchInputRef.current) {
-      mobileSearchInputRef.current.focus();
-    }
-  }, [isMobileSearchOpen]);
-
-  const handleMobileSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (mobileSearchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(mobileSearchQuery.trim())}`);
-      setIsMobileSearchOpen(false);
-      setMobileSearchQuery("");
-    }
-  };
   
   const [genreSearch, setGenreSearch] = useState("");
   const [isGenreDropdownOpen, setIsGenreDropdownOpen] = useState(false);
@@ -262,23 +245,16 @@ function NavbarContent() {
           
           {/* ── Mobile Search Expanded State (md:hidden) ── */}
           {isMobileSearchOpen && (
-            <div className="flex w-full items-center gap-3 md:hidden animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="flex w-full items-center gap-2 md:hidden animate-in fade-in slide-in-from-right-4 duration-300">
               <button 
                 onClick={() => setIsMobileSearchOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors p-1"
+                className="text-gray-400 hover:text-white transition-colors p-1 shrink-0"
               >
                 <ArrowLeft size={22} />
               </button>
-              <form onSubmit={handleMobileSearchSubmit} className="flex-1">
-                <input
-                  ref={mobileSearchInputRef}
-                  type="text"
-                  value={mobileSearchQuery}
-                  onChange={(e) => setMobileSearchQuery(e.target.value)}
-                  placeholder="Search movies, TV shows..."
-                  className="w-full bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-white outline-none focus:border-[#D4AF37] transition-all duration-300"
-                />
-              </form>
+              <div className="flex-1 w-full">
+                <SearchBar />
+              </div>
             </div>
           )}
 
