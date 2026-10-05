@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, Play, Shield, Loader2, Save, Check } from "lucide-react";
+import { X, Play, Shield, Loader2, Save, Check, ListVideo, SkipForward, Trash2, Plus, Pencil } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -48,6 +48,30 @@ const getEmbedUrl = (url: string | null): string | undefined => {
   }
 };
 
+const formatVideoUrl = (url: string, mode: 'single' | 'playlist'): string => {
+  if (!url) return url;
+  if (url.includes("youtube.com") || url.includes("youtu.be")) {
+    if (mode === 'playlist' && url.includes("list=")) {
+      let listId = "";
+      try {
+        listId = new URL(url).searchParams.get("list") || "";
+      } catch (e) {}
+      return listId ? `https://www.youtube.com/embed/videoseries?list=${listId}` : url;
+    } else {
+      let videoId = "";
+      if (url.includes("youtu.be/")) {
+        videoId = url.split("youtu.be/")[1]?.split("?")[0];
+      } else {
+        try {
+          videoId = new URL(url).searchParams.get("v") || "";
+        } catch (e) {}
+      }
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    }
+  }
+  return url;
+};
+
 export interface CineVaultPlayerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -73,7 +97,22 @@ export default function CineVaultPlayerModal({
   const [editMode, setEditMode] = useState(false);
   const [inputUrl, setInputUrl] = useState("");
   const [saving, setSaving] = useState(false);
-  const [isPlaylist, setIsPlaylist] = useState(false);
+  
+  const [addMode, setAddMode] = useState<'batch' | 'playlist' | 'manage'>('batch');
+  const [editSeasonNum, setEditSeasonNum] = useState<number>(season ? Number(season) : 1);
+  const [editSeasonName, setEditSeasonName] = useState(`Season ${season || 1}`);
+  const [batchEpisodes, setBatchEpisodes] = useState<any[]>([{ id: Date.now(), seasonNum: season ? Number(season) : 1, seasonName: `Season ${season || 1}`, epNumber: episode ? Number(episode) : 1, title: `Episode ${episode || 1}`, url: '' }]);
+  const [playlists, setPlaylists] = useState<any[]>([{ id: Date.now(), seasonNum: season ? Number(season) : 1, seasonName: `Season ${season || 1}`, url: '' }]);
+  
+  const [existingLinks, setExistingLinks] = useState<any[]>([]);
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [editingLinkData, setEditingLinkData] = useState<any>({});
+  
+  // TV Show Player UX State
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [allEpisodes, setAllEpisodes] = useState<any[]>([]);
+  const [selectedSeason, setSelectedSeason] = useState<number>(season ? Number(season) : 1);
+  const [currentEpisode, setCurrentEpisode] = useState<number>(episode ? Number(episode) : 1);
   
   const backdropRef = useRef<HTMLDivElement>(null);
   
@@ -103,7 +142,7 @@ export default function CineVaultPlayerModal({
         // First try exact episode
         const { data: epData, error: epError } = await supabase
           .from("global_links")
-          .select("stream_url")
+          .select("*")
           .eq("tmdb_id", String(tmdbId))
           .eq("media_type", "tv")
           .eq("season_number", Number(season))
@@ -115,12 +154,22 @@ export default function CineVaultPlayerModal({
         if (epData?.stream_url) {
           setStreamUrl(epData.stream_url);
           setInputUrl(epData.stream_url);
-          setIsPlaylist(false);
+          setAddMode('batch');
+          setEditSeasonNum(epData.season_number);
+          setEditSeasonName(epData.season_name || `Season ${epData.season_number}`);
+          setBatchEpisodes([{
+            id: Date.now(),
+            seasonNum: epData.season_number,
+            seasonName: epData.season_name || `Season ${epData.season_number}`,
+            epNumber: epData.episode_number,
+            title: epData.episode_name || `Episode ${epData.episode_number}`,
+            url: epData.stream_url
+          }]);
         } else {
           // Fallback to Season Playlist
           const { data: seasonData } = await supabase
             .from("global_links")
-            .select("stream_url")
+            .select("*")
             .eq("tmdb_id", String(tmdbId))
             .eq("media_type", "tv")
             .eq("season_number", Number(season))
@@ -131,7 +180,10 @@ export default function CineVaultPlayerModal({
           if (seasonData?.stream_url) {
             setStreamUrl(seasonData.stream_url);
             setInputUrl(seasonData.stream_url);
-            setIsPlaylist(true);
+            setAddMode('playlist');
+            setEditSeasonNum(seasonData.season_number);
+            setEditSeasonName(seasonData.season_name || `Season ${seasonData.season_number}`);
+            setPlaylists([{ id: Date.now(), seasonNum: seasonData.season_number, seasonName: seasonData.season_name || `Season ${seasonData.season_number}`, url: seasonData.stream_url }]);
           }
         }
       }
@@ -142,12 +194,41 @@ export default function CineVaultPlayerModal({
     }
   };
 
+  const fetchAllEpisodes = async () => {
+    if (mediaType !== "tv") return;
+    const { data } = await supabase
+      .from("global_links")
+      .select("*")
+      .eq("tmdb_id", String(tmdbId))
+      .eq("media_type", "tv")
+      .eq("is_playlist", false)
+      .order("season_number", { ascending: true })
+      .order("episode_number", { ascending: true });
+      
+    if (data) {
+      setAllEpisodes(data);
+      if (season) setSelectedSeason(Number(season));
+      if (episode) setCurrentEpisode(Number(episode));
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchStreamLink();
+      fetchAllEpisodes();
       setEditMode(false);
     }
-  }, [isOpen, tmdbId, mediaType, season, episode]);
+  }, [isOpen, tmdbId, mediaType, season, episode]); // We trigger fetch on open
+
+  // When currentEpisode/selectedSeason changes (via sidebar), update the stream URL instantly
+  useEffect(() => {
+    if (isOpen && !editMode && mediaType === "tv") {
+      const epData = allEpisodes.find(ep => ep.season_number === selectedSeason && ep.episode_number === currentEpisode);
+      if (epData) {
+        setStreamUrl(epData.stream_url);
+      }
+    }
+  }, [currentEpisode, selectedSeason, allEpisodes]);
 
   // Close on Escape
   useEffect(() => {
@@ -171,43 +252,101 @@ export default function CineVaultPlayerModal({
     setSaving(true);
     
     try {
-      const sNum = mediaType === "tv" ? Number(season) : 0;
-      const eNum = mediaType === "tv" && !isPlaylist ? Number(episode) : 0;
-      const playlistFlag = mediaType === "tv" ? isPlaylist : false;
-      const isEmpty = !inputUrl.trim();
+      const sNum = mediaType === "tv" ? Number(editSeasonNum) : 0;
       
-      // Always delete existing to avoid primary key conflicts or completely remove it
-      await supabase
-        .from("global_links")
-        .delete()
-        .eq("tmdb_id", String(tmdbId))
-        .eq("media_type", mediaType)
-        .eq("season_number", sNum)
-        .eq("episode_number", eNum)
-        .eq("is_playlist", playlistFlag);
+      if (mediaType === "movie") {
+        const formattedUrl = formatVideoUrl(inputUrl, 'single');
+        const isEmpty = !formattedUrl.trim();
         
-      if (isEmpty) {
-        alert("Premium stream link deleted successfully!");
-        setStreamUrl(null);
-        setEditMode(false);
-      } else {
-        const { error } = await supabase
+        await supabase
           .from("global_links")
-          .insert({
-            tmdb_id: String(tmdbId),
-            media_type: mediaType,
-            season_number: sNum,
-            episode_number: eNum,
-            is_playlist: playlistFlag,
-            stream_url: inputUrl,
-          });
-
-        if (!error) {
-          alert("Premium stream saved successfully!");
-          setStreamUrl(inputUrl);
+          .delete()
+          .eq("tmdb_id", String(tmdbId))
+          .eq("media_type", "movie");
+          
+        if (isEmpty) {
+          alert("Premium stream link deleted successfully!");
+          setStreamUrl(null);
           setEditMode(false);
         } else {
-          alert("Failed to save stream: " + error.message);
+          const payload = {
+            tmdb_id: String(tmdbId),
+            media_type: mediaType,
+            season_number: 0,
+            episode_number: 0,
+            is_playlist: false,
+            stream_url: formattedUrl,
+          };
+          const { error } = await supabase.from("global_links").insert(payload);
+          if (!error) {
+            alert("Premium stream saved successfully!");
+            setStreamUrl(formattedUrl);
+            setEditMode(false);
+          } else {
+            alert("Failed to save stream: " + error.message);
+          }
+        }
+      } else {
+        if (addMode === 'batch') {
+          const validEps = batchEpisodes.filter(ep => ep.url.trim() !== "");
+          if (validEps.length === 0) {
+            alert("No valid episodes found to save!");
+            setSaving(false);
+            return;
+          }
+          
+          const payload = validEps.map(ep => {
+            return {
+              tmdb_id: String(tmdbId),
+              media_type: "tv",
+              season_number: Number(ep.seasonNum) || 1,
+              season_name: ep.seasonName,
+              episode_number: Number(ep.epNumber),
+              episode_name: ep.title,
+              is_playlist: false,
+              stream_url: formatVideoUrl(ep.url, 'single'),
+            };
+          });
+          
+          const { error } = await supabase.from("global_links").upsert(payload, { onConflict: 'tmdb_id,season_name,episode_number' });
+          if (!error) {
+            alert("Batch saved successfully!");
+            setStreamUrl(payload[0].stream_url);
+            setEditMode(false);
+            setBatchEpisodes([{ id: Date.now(), seasonNum: 1, seasonName: '', epNumber: '', title: '', url: '' }]);
+            fetchAllEpisodes();
+          } else {
+            alert("Error saving: " + error.message);
+          }
+        } else {
+          const validPlaylists = playlists.filter(p => p.url.trim() !== "");
+          if (validPlaylists.length === 0) {
+            alert("No valid playlists found to save!");
+            setSaving(false);
+            return;
+          }
+
+          const payload = validPlaylists.map(p => ({
+            tmdb_id: String(tmdbId),
+            media_type: "tv",
+            season_number: Number(p.seasonNum) || 1,
+            season_name: p.seasonName,
+            episode_number: 0,
+            episode_name: null,
+            is_playlist: true,
+            stream_url: formatVideoUrl(p.url, 'playlist'),
+          }));
+          
+          const { error } = await supabase.from("global_links").insert(payload);
+          if (!error) {
+            alert("Playlists saved successfully!");
+            setStreamUrl(payload[0].stream_url);
+            setEditMode(false);
+            setPlaylists([{ id: Date.now(), seasonNum: 1, seasonName: '', url: '' }]);
+            fetchAllEpisodes();
+          } else {
+            alert("Error saving: " + error.message);
+          }
         }
       }
     } catch (err: any) {
@@ -218,9 +357,70 @@ export default function CineVaultPlayerModal({
     }
   };
 
+  const handleDeleteLink = async (id: string) => {
+    if (confirm("Are you sure you want to delete this link?")) {
+      await supabase.from('global_links').delete().eq('id', id);
+      setExistingLinks(existingLinks.filter(l => l.id !== id));
+      if (mediaType === "tv") fetchAllEpisodes();
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    const isTv = editingLinkData.media_type === 'tv';
+    const formattedUrl = formatVideoUrl(editingLinkData.stream_url, editingLinkData.is_playlist ? 'playlist' : 'single');
+    
+    const payload = isTv ? {
+      season_number: Number(editingLinkData.season_number) || 1,
+      season_name: editingLinkData.season_name,
+      episode_number: Number(editingLinkData.episode_number) || 0,
+      episode_name: editingLinkData.episode_name,
+      stream_url: formattedUrl
+    } : {
+      stream_url: formattedUrl
+    };
+
+    const { error } = await supabase.from('global_links').update(payload).eq('id', editingLinkId);
+    
+    if (!error) {
+      setExistingLinks(existingLinks.map(l => l.id === editingLinkId ? { ...editingLinkData, ...payload, stream_url: formattedUrl } : l));
+      setEditingLinkId(null);
+      if (mediaType === "tv") fetchAllEpisodes();
+    } else {
+      alert("Failed to update: " + error.message);
+    }
+  };
+
+  useEffect(() => {
+    if (addMode === 'manage' && isAdmin) {
+      const loadLinks = async () => {
+        const { data } = await supabase.from('global_links').select('*').eq('tmdb_id', String(tmdbId)).order('created_at', { ascending: false });
+        if (data) setExistingLinks(data);
+      };
+      loadLinks();
+    }
+  }, [addMode, tmdbId, isAdmin]);
+
   if (!isOpen) return null;
 
   const isYouTube = streamUrl?.includes('youtube.com') || streamUrl?.includes('youtu.be') || streamUrl?.includes('youtube-nocookie.com');
+  
+  // Helper for TV Show UI
+  const availableSeasons = Array.from(new Set(allEpisodes.map(ep => ep.season_number))).sort((a, b) => a - b);
+  const episodesForSeason = allEpisodes.filter(ep => ep.season_number === selectedSeason);
+
+  const playNextEpisode = () => {
+    const nextEp = allEpisodes.find(ep => ep.season_number === selectedSeason && ep.episode_number === currentEpisode + 1);
+    if (nextEp) {
+      setCurrentEpisode(currentEpisode + 1);
+    } else {
+      // Try next season episode 1
+      const nextSeasonEp = allEpisodes.find(ep => ep.season_number === selectedSeason + 1 && ep.episode_number === 1);
+      if (nextSeasonEp) {
+        setSelectedSeason(selectedSeason + 1);
+        setCurrentEpisode(1);
+      }
+    }
+  };
 
   return (
     <div
@@ -285,58 +485,155 @@ export default function CineVaultPlayerModal({
                     </p>
                     
                     <form onSubmit={handleSaveLink} className="space-y-6">
-                      <div>
-                        <label className="block text-sm font-bold text-gold mb-2">Stream URL (Iframe / Direct Link)</label>
-                        <input
-                          type="url"
-                          placeholder="https://... (Leave blank to delete)"
-                          value={inputUrl}
-                          onChange={(e) => setInputUrl(e.target.value)}
-                          className="w-full rounded-xl border border-gold/20 bg-black/60 px-5 py-4 text-sm text-white outline-none focus:border-gold focus:ring-1 focus:ring-gold/50 transition-all placeholder:text-white/20 font-mono"
-                        />
-                      </div>
-
-                      {mediaType === "tv" && (
-                        <div className="flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-black/40">
-                          <button
-                            type="button"
-                            onClick={() => setIsPlaylist(!isPlaylist)}
-                            className={`flex h-6 w-6 items-center justify-center rounded border transition-colors ${
-                              isPlaylist ? "border-gold bg-gold text-black" : "border-white/20 bg-transparent text-transparent"
-                            }`}
-                          >
-                            <Check size={14} strokeWidth={4} />
-                          </button>
-                          <div>
-                            <p className="text-sm font-bold text-white">Save as Season Playlist</p>
-                            <p className="text-xs text-silver-dark">Check this if the URL contains a player that handles all episodes for Season {season}.</p>
-                          </div>
+                      {(mediaType === "tv" || mediaType === "movie") && (
+                        <div className="flex bg-[#12141D] p-1 rounded-xl border border-white/10 w-full mb-2">
+                           {mediaType === "tv" && (
+                             <>
+                               <button type="button" onClick={() => setAddMode('batch')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${addMode === 'batch' ? 'bg-gold text-black shadow-lg shadow-gold/20 scale-100' : 'text-silver-dark hover:text-white scale-95 hover:scale-100'}`}>Batch Single Episodes</button>
+                               <button type="button" onClick={() => setAddMode('playlist')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${addMode === 'playlist' ? 'bg-gold text-black shadow-lg shadow-gold/20 scale-100' : 'text-silver-dark hover:text-white scale-95 hover:scale-100'}`}>Season Playlist</button>
+                             </>
+                           )}
+                           <button type="button" onClick={() => setAddMode('manage')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${addMode === 'manage' ? 'bg-gold text-black shadow-lg shadow-gold/20 scale-100' : 'text-silver-dark hover:text-white scale-95 hover:scale-100'}`}>Manage Links</button>
                         </div>
                       )}
 
-                      <div className="flex justify-end gap-4 pt-4 border-t border-white/10">
-                        <button
-                          type="button"
-                          onClick={() => setEditMode(false)}
-                          className="px-6 py-3 text-sm font-medium text-silver-dark hover:text-white transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={saving}
-                          className="flex items-center gap-2 rounded-xl bg-gold-shimmer px-8 py-3 text-sm font-bold text-black transition-all hover:brightness-110 disabled:opacity-70 disabled:cursor-not-allowed shadow-gold-md"
-                        >
-                          {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                          Save Stream
-                        </button>
-                      </div>
+                      {addMode === 'manage' && (
+                        <div className="space-y-3 max-h-80 overflow-y-auto custom-scrollbar p-2 bg-black/40 rounded-xl border border-white/5">
+                          {existingLinks.length === 0 ? (
+                             <p className="text-silver-dark text-center py-4">No links found for this title.</p>
+                          ) : existingLinks.map(link => (
+                            <div key={link.id} className="bg-[#12141D] border border-white/10 p-3 rounded-xl flex items-center justify-between gap-4">
+                              {editingLinkId === link.id ? (
+                                <div className="flex-1 flex flex-col gap-2">
+                                  {link.media_type === 'tv' && (
+                                    <div className="flex gap-2">
+                                      <input type="number" value={editingLinkData.season_number || ''} onChange={e => setEditingLinkData({...editingLinkData, season_number: e.target.value})} placeholder="S#" className="w-16 bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm outline-none" />
+                                      <input type="text" value={editingLinkData.season_name || ''} onChange={e => setEditingLinkData({...editingLinkData, season_name: e.target.value})} placeholder="Season Name" className="w-1/3 bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm outline-none" />
+                                      {!link.is_playlist && (
+                                        <>
+                                          <input type="number" value={editingLinkData.episode_number || ''} onChange={e => setEditingLinkData({...editingLinkData, episode_number: e.target.value})} placeholder="Ep" className="w-16 bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm outline-none" />
+                                          <input type="text" value={editingLinkData.episode_name || ''} onChange={e => setEditingLinkData({...editingLinkData, episode_name: e.target.value})} placeholder="Title" className="flex-1 bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm outline-none" />
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                  <input type="url" value={editingLinkData.stream_url || ''} onChange={e => setEditingLinkData({...editingLinkData, stream_url: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white font-mono text-sm outline-none" placeholder="Stream URL" />
+                                  <div className="flex gap-2 justify-end">
+                                    <button type="button" onClick={() => setEditingLinkId(null)} className="px-3 py-1.5 text-xs text-silver hover:text-white bg-white/5 rounded-lg transition-colors">Cancel</button>
+                                    <button type="button" onClick={handleSaveEdit} className="px-3 py-1.5 text-xs text-black font-bold bg-gold rounded-lg shadow-gold-sm transition-all hover:brightness-110">Save</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-bold text-white mb-1 truncate">
+                                      {link.media_type === 'movie' ? 'Movie Stream' : link.is_playlist ? `${link.season_name} (Playlist)` : `${link.season_name} - Ep ${link.episode_number}: ${link.episode_name || 'No Title'}`}
+                                    </div>
+                                    <div className="text-xs text-silver-dark font-mono truncate">{link.stream_url}</div>
+                                  </div>
+                                  <div className="flex gap-2 shrink-0">
+                                    <button type="button" onClick={() => { setEditingLinkId(link.id); setEditingLinkData(link); }} className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"><Pencil size={16} /></button>
+                                    <button type="button" onClick={() => handleDeleteLink(link.id)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {mediaType === "tv" && addMode === 'playlist' && (
+                        <div className="space-y-4">
+                          <label className="block text-sm font-bold text-gold mb-2">Season Playlists</label>
+                          <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-3 p-2 bg-black/40 rounded-xl border border-white/5">
+                            {playlists.map((p) => (
+                              <div key={p.id} className="flex gap-2 items-center">
+                                <input type="number" value={p.seasonNum} onChange={e => setPlaylists(playlists.map(x => x.id === p.id ? {...x, seasonNum: Number(e.target.value)} : x))} placeholder="S#" className="w-16 bg-[#12141D] border border-white/10 rounded-lg p-2 text-white outline-none focus:border-gold text-sm" />
+                                <input type="text" value={p.seasonName} onChange={e => setPlaylists(playlists.map(x => x.id === p.id ? {...x, seasonName: e.target.value} : x))} placeholder="Season Name" className="w-32 bg-[#12141D] border border-white/10 rounded-lg p-2 text-white outline-none focus:border-gold text-sm" />
+                                <input type="url" value={p.url} onChange={e => setPlaylists(playlists.map(x => x.id === p.id ? {...x, url: e.target.value} : x))} placeholder="Playlist URL (YouTube/Direct)" className="flex-1 bg-[#12141D] border border-white/10 rounded-lg p-2 text-white outline-none focus:border-gold font-mono text-sm" />
+                                <button type="button" onClick={() => setPlaylists(playlists.filter(x => x.id !== p.id))} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                              </div>
+                            ))}
+                          </div>
+                          <button type="button" onClick={() => {
+                             const lastP = playlists[playlists.length - 1];
+                             const nextS = lastP ? Number(lastP.seasonNum) + 1 : 1;
+                             setPlaylists([...playlists, { id: Date.now(), seasonNum: nextS, seasonName: `Season ${nextS}`, url: '' }]);
+                          }} className="w-full py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg border border-white/10 transition-colors text-sm flex items-center justify-center gap-2">
+                             <Plus size={16} /> Add Another Season Playlist
+                          </button>
+                        </div>
+                      )}
+
+                      {mediaType === "movie" && (
+                        <div>
+                          <label className="block text-sm font-bold text-gold mb-2">Stream URL (Direct Link or YouTube)</label>
+                          <input
+                            type="url"
+                            placeholder="https://... (Leave blank to delete)"
+                            value={inputUrl}
+                            onChange={(e) => setInputUrl(e.target.value)}
+                            className="w-full bg-[#12141D] border border-white/10 rounded-lg p-3 text-white outline-none focus:border-gold transition-colors font-mono"
+                          />
+                        </div>
+                      )}
+
+                      {mediaType === "tv" && addMode === 'batch' && (
+                        <div className="space-y-4">
+                          <label className="block text-sm font-bold text-gold mb-2">Episodes List</label>
+                          <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-3 p-2 bg-black/40 rounded-xl border border-white/5">
+                            {batchEpisodes.map((ep) => (
+                              <div key={ep.id} className="flex gap-2 items-center">
+                                <input type="number" value={ep.seasonNum} onChange={e => setBatchEpisodes(batchEpisodes.map(x => x.id === ep.id ? {...x, seasonNum: Number(e.target.value)} : x))} placeholder="S#" className="w-16 bg-[#12141D] border border-white/10 rounded-lg p-2 text-white outline-none focus:border-gold text-sm" />
+                                <input type="text" value={ep.seasonName} onChange={e => setBatchEpisodes(batchEpisodes.map(x => x.id === ep.id ? {...x, seasonName: e.target.value} : x))} placeholder="Season Name" className="w-32 bg-[#12141D] border border-white/10 rounded-lg p-2 text-white outline-none focus:border-gold text-sm" />
+                                <input type="number" value={ep.epNumber} onChange={e => setBatchEpisodes(batchEpisodes.map(x => x.id === ep.id ? {...x, epNumber: e.target.value} : x))} placeholder="Ep" className="w-16 bg-[#12141D] border border-white/10 rounded-lg p-2 text-white outline-none focus:border-gold text-sm" />
+                                <input type="text" value={ep.title} onChange={e => setBatchEpisodes(batchEpisodes.map(x => x.id === ep.id ? {...x, title: e.target.value} : x))} placeholder="Title" className="w-32 bg-[#12141D] border border-white/10 rounded-lg p-2 text-white outline-none focus:border-gold text-sm" />
+                                <input type="url" value={ep.url} onChange={e => setBatchEpisodes(batchEpisodes.map(x => x.id === ep.id ? {...x, url: e.target.value} : x))} placeholder="URL (YouTube/Direct)" className="flex-1 bg-[#12141D] border border-white/10 rounded-lg p-2 text-white outline-none focus:border-gold font-mono text-sm" />
+                                <button type="button" onClick={() => setBatchEpisodes(batchEpisodes.filter(x => x.id !== ep.id))} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                              </div>
+                            ))}
+                          </div>
+                          <button type="button" onClick={() => {
+                             const lastEp = batchEpisodes[batchEpisodes.length - 1];
+                             const lastSeasonNum = lastEp ? lastEp.seasonNum : 1;
+                             const lastSeason = lastEp ? lastEp.seasonName : '';
+                             const nextEp = lastEp ? Number(lastEp.epNumber) + 1 : 1;
+                             setBatchEpisodes([...batchEpisodes, { id: Date.now(), seasonNum: lastSeasonNum, seasonName: lastSeason, epNumber: nextEp, title: '', url: '' }]);
+                          }} className="w-full py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg border border-white/10 transition-colors text-sm flex items-center justify-center gap-2">
+                             <Plus size={16} /> Add Another Episode
+                          </button>
+                        </div>
+                      )}
+
+                      {addMode !== 'manage' ? (
+                        <div className="flex justify-end gap-4 pt-4 border-t border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => setEditMode(false)}
+                            className="px-6 py-3 text-sm font-medium text-silver-dark hover:text-white transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={saving}
+                            className="flex items-center gap-2 rounded-xl bg-gold-shimmer px-8 py-3 text-sm font-bold text-black transition-all hover:brightness-110 disabled:opacity-70 disabled:cursor-not-allowed shadow-gold-md"
+                          >
+                            {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                            {saving ? "Saving..." : "Save"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end pt-4 border-t border-white/10">
+                          <button type="button" onClick={() => setEditMode(false)} className="px-6 py-3 text-sm font-medium text-silver-dark hover:text-white transition-colors">Close</button>
+                        </div>
+                      )}
                     </form>
                   </div>
                 </div>
               ) : streamUrl ? (
                 /* The Player */
-                <div className="relative aspect-video w-full bg-black">
+                <div className="relative aspect-video w-full bg-black group/player overflow-hidden">
                   <iframe
                     src={getEmbedUrl(streamUrl)}
                     className="absolute inset-0 h-full w-full border-0"
@@ -345,6 +642,72 @@ export default function CineVaultPlayerModal({
                     referrerPolicy={isYouTube ? undefined : "no-referrer"}
                     title="CineVault Premium Stream"
                   />
+                  
+                  {/* Floating Controls for TV Shows */}
+                  {mediaType === "tv" && (
+                    <div className="absolute bottom-6 right-6 z-40 flex items-center gap-3 opacity-0 group-hover/player:opacity-100 transition-opacity duration-300">
+                      <button 
+                        onClick={playNextEpisode}
+                        className="flex items-center gap-2 bg-[#0B0C10]/80 hover:bg-gold hover:text-black text-white px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/10 transition-all font-medium text-sm shadow-xl"
+                      >
+                        <SkipForward size={18} /> Next Ep
+                      </button>
+                      <button 
+                        onClick={() => setSidebarOpen(true)}
+                        className="flex items-center gap-2 bg-[#0B0C10]/80 hover:bg-white hover:text-black text-white px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/10 transition-all font-medium text-sm shadow-xl"
+                      >
+                        <ListVideo size={18} /> Episodes
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Episodes Sidebar Modal/Overlay */}
+                  {sidebarOpen && mediaType === "tv" && (
+                    <div className="absolute inset-y-0 right-0 w-80 bg-[#0B0C10]/95 backdrop-blur-2xl z-50 border-l border-white/10 animate-fade-left flex flex-col shadow-2xl">
+                      {/* Header */}
+                      <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                        <select 
+                          value={selectedSeason} 
+                          onChange={e => setSelectedSeason(Number(e.target.value))}
+                          className="bg-transparent text-white font-bold text-lg outline-none cursor-pointer"
+                        >
+                          {availableSeasons.map(s => (
+                            <option key={s} value={s} className="bg-[#0B0C10]">Season {s}</option>
+                          ))}
+                        </select>
+                        <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-white p-1">
+                          <X size={20} />
+                        </button>
+                      </div>
+                      
+                      {/* Episodes List */}
+                      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2 custom-scrollbar">
+                         {episodesForSeason.length > 0 ? (
+                           episodesForSeason.map(ep => {
+                             const isPlaying = ep.episode_number === currentEpisode;
+                             return (
+                               <button 
+                                  key={ep.episode_number} 
+                                  onClick={() => setCurrentEpisode(ep.episode_number)}
+                                  className={`flex flex-col items-start p-3 rounded-xl border text-left transition-colors group ${
+                                    isPlaying 
+                                      ? 'border-gold bg-gold/10' 
+                                      : 'border-white/5 bg-white/5 hover:bg-white/10'
+                                  }`}
+                               >
+                                  <span className={`text-sm font-bold ${isPlaying ? 'text-gold' : 'text-white group-hover:text-gold'}`}>
+                                    {ep.episode_number}. {ep.episode_name || `Episode ${ep.episode_number}`}
+                                  </span>
+                                  {isPlaying && <span className="text-[10px] text-gold uppercase tracking-wider mt-1 font-semibold flex items-center gap-1"><Play size={10} className="fill-gold"/> Playing</span>}
+                               </button>
+                             );
+                           })
+                         ) : (
+                           <div className="text-sm text-gray-500 text-center py-10">No episodes indexed for this season.</div>
+                         )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* No Stream Found */

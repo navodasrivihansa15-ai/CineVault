@@ -23,6 +23,9 @@ export default function ProfilePage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [avatarList, setAvatarList] = useState<string[]>([]);
+  const [selectedAvatar, setSelectedAvatar] = useState("");
 
   // Watchlist state
   const [watchlist, setWatchlist] = useState<WatchlistEntity[]>([]);
@@ -96,21 +99,10 @@ export default function ProfilePage() {
   }, [activeTab]);
 
   // Actions
-  const getSupabaseFilePath = (url: string | null) => {
-    if (!url) return null;
-    const match = url.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/);
-    return match ? match[1] : null;
-  };
-
   const handleRemoveAvatar = async () => {
     if (!user || !avatarUrl) return;
     try {
       setUploadingAvatar(true);
-      const oldPath = getSupabaseFilePath(avatarUrl);
-      if (oldPath) {
-        await supabase.storage.from('avatars').remove([oldPath]);
-      }
-      
       const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
       if (error) throw error;
       
@@ -124,32 +116,39 @@ export default function ProfilePage() {
     }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      if (!e.target.files || e.target.files.length === 0) return;
-      if (!user) return;
-      
-      setUploadingAvatar(true);
+  const fetchAvatars = async () => {
+    const { data, error } = await supabase.storage.from('avatars').list('', {
+      limit: 50,
+      sortBy: { column: 'name', order: 'asc' }
+    });
+    if (data) {
+      const urls = data.map((file) => {
+        if (file.name === '.emptyFolderPlaceholder') return null;
+        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(file.name);
+        return publicUrl;
+      }).filter(Boolean) as string[];
+      setAvatarList(urls);
+    }
+  };
 
-      const oldPath = getSupabaseFilePath(avatarUrl);
-      if (oldPath) {
-        await supabase.storage.from('avatars').remove([oldPath]);
-      }
+  useEffect(() => {
+    if (isAvatarModalOpen && avatarList.length === 0) {
+      fetchAvatars();
+    }
+  }, [isAvatarModalOpen, avatarList.length]);
+
+  const handleSaveAvatarFromGallery = async () => {
+    if (!user || !selectedAvatar) return;
+    try {
+      setUploadingAvatar(true);
+      const { error } = await supabase.from('profiles').update({ avatar_url: selectedAvatar }).eq('id', user.id);
+      if (error) throw error;
       
-      const file = e.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}-${Math.random()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-        
-      if (uploadError) throw uploadError;
-      
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      setAvatarUrl(data.publicUrl);
+      setAvatarUrl(selectedAvatar);
+      window.dispatchEvent(new Event("profile-updated"));
+      setIsAvatarModalOpen(false);
     } catch (error: any) {
-      alert("Error uploading avatar: " + error.message);
+      alert("Error updating avatar: " + error.message);
     } finally {
       setUploadingAvatar(false);
     }
@@ -332,33 +331,23 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-silver-light mb-2">
-                      Avatar URL
+                      Profile Picture
                     </label>
-                    <div className="flex flex-col gap-3">
-                      <div className="relative flex-1">
-                        <Camera size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-silver-dark" />
-                        <input
-                          type="url"
-                          value={avatarUrl}
-                          onChange={(e) => setAvatarUrl(e.target.value)}
-                          placeholder="https://example.com/avatar.jpg"
-                          className="w-full rounded-xl border border-white/10 bg-black/50 pl-11 pr-4 py-3 text-white placeholder-silver-dark outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/50 transition-all"
-                        />
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-silver-dark">Or upload a new image:</span>
-                        <label className="cursor-pointer bg-gold/10 text-gold hover:bg-gold hover:text-black border border-gold/30 hover:border-gold px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-inner-gold hover:shadow-gold-sm">
-                          {uploadingAvatar ? "Uploading..." : "Choose File"}
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={handleAvatarUpload} 
-                            disabled={uploadingAvatar}
-                            className="hidden" 
-                          />
-                        </label>
-                      </div>
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedAvatar(avatarUrl);
+                          setIsAvatarModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 bg-gold/10 text-gold hover:bg-gold hover:text-black border border-gold/30 hover:border-gold px-5 py-3 rounded-xl text-sm font-semibold transition-all shadow-inner-gold hover:shadow-gold-sm"
+                      >
+                        <Camera size={18} />
+                        Choose Avatar from Gallery
+                      </button>
                     </div>
+
+
                     {avatarUrl && (
                       <div className="mt-4 flex items-center gap-4">
                         <span className="text-xs text-silver-dark uppercase tracking-wider font-semibold">Preview</span>
@@ -485,6 +474,67 @@ export default function ProfilePage() {
 
         </div>
       </div>
+
+      {/* Avatar Gallery Modal */}
+      {isAvatarModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8">
+          <div className="absolute inset-0 bg-oled/95 backdrop-blur-xl" onClick={() => setIsAvatarModalOpen(false)} />
+          <div className="relative z-10 w-full max-w-2xl bg-[#0B0C10]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <Camera className="text-[#D4AF37]" size={24} /> Select Avatar
+              </h2>
+              <button 
+                onClick={() => setIsAvatarModalOpen(false)}
+                className="p-2 text-silver-dark hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+              >
+                <Trash2 size={18} className="hidden" /> {/* just to align imports, using X really */}
+                <span className="font-bold text-xl leading-none">&times;</span>
+              </button>
+            </div>
+            
+            {avatarList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-silver-dark">
+                <Loader2 size={32} className="animate-spin text-gold mb-4" />
+                <p>Loading gallery...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 overflow-y-auto p-2 custom-scrollbar">
+                {avatarList.map((url) => (
+                  <div 
+                    key={url} 
+                    onClick={() => setSelectedAvatar(url)}
+                    className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all aspect-square ${
+                      selectedAvatar === url 
+                        ? 'border-[#D4AF37] scale-105 shadow-lg shadow-[#D4AF37]/20 z-10' 
+                        : 'border-white/10 hover:border-white/30'
+                    }`}
+                  >
+                    <Image alt="Avatar option" className="object-cover" fill src={url} unoptimized />
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-white/10 shrink-0">
+              <button 
+                onClick={() => setIsAvatarModalOpen(false)}
+                className="px-6 py-2.5 text-sm font-medium text-silver-light hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveAvatarFromGallery}
+                disabled={uploadingAvatar || !selectedAvatar}
+                className="flex items-center gap-2 rounded-xl bg-gold-shimmer px-6 py-2.5 text-sm font-bold text-black transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed shadow-gold-sm"
+              >
+                {uploadingAvatar ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                Confirm Avatar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

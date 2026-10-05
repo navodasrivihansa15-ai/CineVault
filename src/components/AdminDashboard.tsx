@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Users, UserX, Shield, Activity, Circle, ShieldAlert, Ban, UserCheck, ShieldPlus, ShieldMinus, Bell, Trash2, Edit } from "lucide-react";
+import { Users, UserX, Shield, Activity, Circle, ShieldAlert, Ban, UserCheck, ShieldPlus, ShieldMinus, Bell, Trash2, Edit, Tv, Plus, Loader2, Save } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 
 type Profile = {
@@ -20,7 +20,7 @@ export default function AdminDashboard({ currentUser }: { currentUser: Profile }
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<"users" | "notices">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "notices" | "tv">("users");
 
   // Stats
   const [stats, setStats] = useState({
@@ -142,18 +142,24 @@ export default function AdminDashboard({ currentUser }: { currentUser: Profile }
         </h2>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 overflow-x-auto custom-scrollbar pb-2">
         <button 
           onClick={() => setActiveTab("users")} 
-          className={`flex items-center gap-2 pb-2 -mb-[1px] border-b-2 transition-colors ${activeTab === "users" ? "border-gold text-gold" : "border-transparent text-gray-400 hover:text-white"}`}
+          className={`flex items-center gap-2 pb-2 whitespace-nowrap -mb-[1px] border-b-2 transition-colors ${activeTab === "users" ? "border-gold text-gold" : "border-transparent text-gray-400 hover:text-white"}`}
         >
           <Users size={18} /> User Management
         </button>
         <button 
           onClick={() => setActiveTab("notices")} 
-          className={`flex items-center gap-2 pb-2 -mb-[1px] border-b-2 transition-colors ${activeTab === "notices" ? "border-gold text-gold" : "border-transparent text-gray-400 hover:text-white"}`}
+          className={`flex items-center gap-2 pb-2 whitespace-nowrap -mb-[1px] border-b-2 transition-colors ${activeTab === "notices" ? "border-gold text-gold" : "border-transparent text-gray-400 hover:text-white"}`}
         >
           <Bell size={18} /> Manage Notices
+        </button>
+        <button 
+          onClick={() => setActiveTab("tv")} 
+          className={`flex items-center gap-2 pb-2 whitespace-nowrap -mb-[1px] border-b-2 transition-colors ${activeTab === "tv" ? "border-gold text-gold" : "border-transparent text-gray-400 hover:text-white"}`}
+        >
+          <Tv size={18} /> TV Show Ingestion
         </button>
       </div>
 
@@ -328,8 +334,10 @@ export default function AdminDashboard({ currentUser }: { currentUser: Profile }
         </div>
       </div>
         </>
-      ) : (
+      ) : activeTab === "notices" ? (
         <ManageNotices />
+      ) : (
+        <ManageTVShows />
       )}
     </div>
   );
@@ -442,6 +450,194 @@ function ManageNotices() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ManageTVShows() {
+  const [tmdbId, setTmdbId] = useState("");
+  const [stagingEpisodes, setStagingEpisodes] = useState<any[]>([]);
+  const [playlistUrl, setPlaylistUrl] = useState("");
+  const [baseSeason, setBaseSeason] = useState(1);
+  const [epCount, setEpCount] = useState(10);
+  const [saving, setSaving] = useState(false);
+
+  // Generate stagingEpisodes from playlist/base URL
+  const handleParsePlaylist = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!playlistUrl) return;
+    const newEps = Array.from({ length: epCount }).map((_, i) => {
+      const epNum = i + 1;
+      let genUrl = playlistUrl;
+      // Auto-replace {ep} with the episode number
+      if (playlistUrl.includes("{ep}")) {
+        genUrl = playlistUrl.replace(/{ep}/g, epNum.toString());
+      }
+      return {
+        id: Date.now() + i + Math.random(), // staging id
+        season_number: baseSeason,
+        season_name: `Season ${baseSeason}`,
+        episode_number: epNum,
+        episode_name: `Episode ${epNum}`,
+        stream_url: genUrl,
+        is_playlist: false
+      };
+    });
+    setStagingEpisodes([...stagingEpisodes, ...newEps]);
+  };
+
+  const handleManualAdd = () => {
+    const sNum = stagingEpisodes.length > 0 ? stagingEpisodes[stagingEpisodes.length - 1].season_number : 1;
+    const sName = stagingEpisodes.length > 0 ? stagingEpisodes[stagingEpisodes.length - 1].season_name : "Season 1";
+    const lastEp = stagingEpisodes.length > 0 ? stagingEpisodes[stagingEpisodes.length - 1].episode_number : 0;
+    
+    setStagingEpisodes([
+      ...stagingEpisodes,
+      {
+        id: Date.now() + Math.random(),
+        season_number: sNum,
+        season_name: sName,
+        episode_number: lastEp + 1,
+        episode_name: `Episode ${lastEp + 1}`,
+        stream_url: "",
+        is_playlist: false
+      }
+    ]);
+  };
+
+  const handleEpisodeEdit = (id: number, field: string, value: string | number) => {
+    setStagingEpisodes(stagingEpisodes.map(ep => ep.id === id ? { ...ep, [field]: value } : ep));
+  };
+
+  const removeEpisode = (id: number) => {
+    setStagingEpisodes(stagingEpisodes.filter(ep => ep.id !== id));
+  };
+
+  const handleSyncSupabase = async () => {
+    if (!tmdbId) return alert("TMDB ID is required to sync to database.");
+    setSaving(true);
+    try {
+      const payload = stagingEpisodes.map(ep => ({
+        tmdb_id: tmdbId,
+        media_type: "tv",
+        season_number: Number(ep.season_number),
+        season_name: String(ep.season_name),
+        episode_number: Number(ep.episode_number),
+        episode_name: String(ep.episode_name),
+        stream_url: String(ep.stream_url),
+        is_playlist: false
+      }));
+
+      // Direct insert (Assumes duplicates are handled by constraint or admin deletes manually)
+      const { error } = await supabase.from('global_links').upsert(payload, { onConflict: 'tmdb_id,season_name,episode_number' });
+      if (error) throw error;
+      alert("Successfully synced all stagingEpisodes to Supabase!");
+      setStagingEpisodes([]);
+      setTmdbId("");
+    } catch (err: any) {
+      alert("Error syncing: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 shadow-xl">
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Tv className="text-gold" size={20}/> TV Show Episode Ingestion</h3>
+        
+        <div className="mb-8">
+          <label className="block text-xs text-gold font-bold mb-1">Target TMDB ID (Required)</label>
+          <input type="number" required value={tmdbId} onChange={e => setTmdbId(e.target.value)} placeholder="e.g. 1399 (Game of Thrones)" className="w-full md:w-1/3 bg-[#0B0C10] border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-gold transition-colors font-mono" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 border-t border-white/10 pt-6">
+          {/* Playlist / Batch Generator */}
+          <div className="bg-black/40 rounded-xl p-5 border border-white/5">
+            <h4 className="text-sm font-bold text-white mb-3">Add via Playlist / Auto-Generate</h4>
+            <form onSubmit={handleParsePlaylist} className="space-y-4">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Base URL (Use {'{ep}'} for episode number)</label>
+                <input type="text" required value={playlistUrl} onChange={e => setPlaylistUrl(e.target.value)} placeholder="https://cdn.com/show/s1/e{ep}.mp4" className="w-full bg-[#0B0C10] border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-gold transition-colors font-mono text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Season Num</label>
+                  <input type="number" required value={baseSeason} onChange={e => setBaseSeason(Number(e.target.value))} className="w-full bg-[#0B0C10] border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-gold" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Episodes to Generate</label>
+                  <input type="number" required value={epCount} onChange={e => setEpCount(Number(e.target.value))} className="w-full bg-[#0B0C10] border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-gold" />
+                </div>
+              </div>
+              <button type="submit" className="w-full bg-white/10 hover:bg-gold hover:text-black text-white font-semibold py-2 rounded-lg transition-colors border border-white/10 hover:border-gold text-sm">
+                Generate Episodes
+              </button>
+            </form>
+          </div>
+          
+          {/* Manual Controls */}
+          <div className="bg-black/40 rounded-xl p-5 border border-white/5 flex flex-col justify-center items-center gap-4">
+            <h4 className="text-sm font-bold text-white mb-2">Manual Addition</h4>
+            <p className="text-xs text-silver-dark text-center mb-2">Need to add a special episode or build manually from scratch?</p>
+            <button onClick={handleManualAdd} className="bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-2 rounded-lg transition-colors border border-white/10 text-sm flex items-center gap-2">
+              <Plus size={16} /> Add Single Episode Blank
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Staging Grid */}
+      {stagingEpisodes.length > 0 && (
+        <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden shadow-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-white">Staging Area ({stagingEpisodes.length} Episodes)</h3>
+            <button onClick={handleSyncSupabase} disabled={saving || !tmdbId} className="bg-gold hover:bg-[#F3E5AB] text-black font-bold px-6 py-2 rounded-lg transition-colors shadow-lg shadow-gold/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+              {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+              Sync to Supabase
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-white/10 text-xs text-silver-dark uppercase tracking-wider">
+                  <th className="pb-3 pr-2 w-16">S.Num</th>
+                  <th className="pb-3 pr-2 w-32">S.Name</th>
+                  <th className="pb-3 pr-2 w-16">E.Num</th>
+                  <th className="pb-3 pr-2 w-48">E.Name</th>
+                  <th className="pb-3 pr-2">Stream URL</th>
+                  <th className="pb-3 w-10">Act</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {stagingEpisodes.map(ep => (
+                  <tr key={ep.id} className="hover:bg-white/[0.02]">
+                    <td className="py-2 pr-2">
+                      <input type="number" value={ep.season_number} onChange={e => handleEpisodeEdit(ep.id, 'season_number', e.target.value)} className="w-full bg-transparent border border-white/10 rounded px-2 py-1 text-white text-sm focus:border-gold outline-none" />
+                    </td>
+                    <td className="py-2 pr-2">
+                      <input type="text" value={ep.season_name} onChange={e => handleEpisodeEdit(ep.id, 'season_name', e.target.value)} className="w-full bg-transparent border border-white/10 rounded px-2 py-1 text-white text-sm focus:border-gold outline-none" />
+                    </td>
+                    <td className="py-2 pr-2">
+                      <input type="number" value={ep.episode_number} onChange={e => handleEpisodeEdit(ep.id, 'episode_number', e.target.value)} className="w-full bg-transparent border border-white/10 rounded px-2 py-1 text-white text-sm focus:border-gold outline-none" />
+                    </td>
+                    <td className="py-2 pr-2">
+                      <input type="text" value={ep.episode_name} onChange={e => handleEpisodeEdit(ep.id, 'episode_name', e.target.value)} className="w-full bg-transparent border border-white/10 rounded px-2 py-1 text-white text-sm focus:border-gold outline-none" />
+                    </td>
+                    <td className="py-2 pr-2">
+                      <input type="text" value={ep.stream_url} onChange={e => handleEpisodeEdit(ep.id, 'stream_url', e.target.value)} className="w-full bg-transparent border border-white/10 rounded px-2 py-1 text-silver font-mono text-xs focus:border-gold outline-none" />
+                    </td>
+                    <td className="py-2">
+                      <button onClick={() => removeEpisode(ep.id)} className="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors"><Trash2 size={16} /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
