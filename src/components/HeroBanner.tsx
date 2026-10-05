@@ -125,7 +125,7 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
         {movie.backdrop_path ? (
           <Image
             src={backdropUrl(movie.backdrop_path, "original")!}
-            alt={movie.title}
+            alt={movie.title || (movie as any).name || "Backdrop"}
             fill
             priority
             sizes="100vw"
@@ -167,8 +167,8 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
           </div>
 
           {/* Title */}
-          <h1 className="mb-2 md:mb-3 max-w-2xl text-2xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-lg">
-            {movie.title}
+          <h1 className="mb-2 md:mb-3 max-w-2xl text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white drop-shadow-lg leading-tight">
+            {movie.title || (movie as any).name}
           </h1>
 
           {/* Overview */}
