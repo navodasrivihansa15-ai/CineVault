@@ -15,7 +15,8 @@ import {
   MessageSquare,
   Home,
   Compass,
-  User
+  User,
+  ArrowLeft
 } from "lucide-react";
 import AuthModal from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
@@ -70,6 +71,25 @@ function NavbarContent() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<{username: string, avatar_url: string} | null>(null);
+  
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [mobileSearchQuery, setMobileSearchQuery] = useState("");
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isMobileSearchOpen && mobileSearchInputRef.current) {
+      mobileSearchInputRef.current.focus();
+    }
+  }, [isMobileSearchOpen]);
+
+  const handleMobileSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (mobileSearchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(mobileSearchQuery.trim())}`);
+      setIsMobileSearchOpen(false);
+      setMobileSearchQuery("");
+    }
+  };
   
   const [genreSearch, setGenreSearch] = useState("");
   const [isGenreDropdownOpen, setIsGenreDropdownOpen] = useState(false);
@@ -238,25 +258,45 @@ function NavbarContent() {
       >
         <nav className="mx-auto flex h-full w-full max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
-          {/* ── Brand (Left) ──────────────────────── */}
-          <Link href="/" className="group flex items-center gap-2 md:gap-3 mr-2 md:mr-4 shrink-0">
-            <div className="relative flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-xl bg-[#D4AF37]/10 ring-1 ring-[#D4AF37]/20 transition-all group-hover:bg-[#D4AF37]/20 group-hover:ring-[#D4AF37]/40">
-              <Film size={18} className="text-[#D4AF37] transition-transform duration-300 group-hover:scale-110 md:hidden" />
-              <Film size={26} className="text-[#D4AF37] transition-transform duration-300 group-hover:scale-110 hidden md:block" />
+          {/* ── Mobile Search Expanded State (md:hidden) ── */}
+          {isMobileSearchOpen && (
+            <div className="flex w-full items-center gap-3 md:hidden animate-in fade-in slide-in-from-right-4 duration-300">
+              <button 
+                onClick={() => setIsMobileSearchOpen(false)}
+                className="text-gray-400 hover:text-white transition-colors p-1"
+              >
+                <ArrowLeft size={22} />
+              </button>
+              <form onSubmit={handleMobileSearchSubmit} className="flex-1">
+                <input
+                  ref={mobileSearchInputRef}
+                  type="text"
+                  value={mobileSearchQuery}
+                  onChange={(e) => setMobileSearchQuery(e.target.value)}
+                  placeholder="Search movies, TV shows..."
+                  className="w-full bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-white outline-none focus:border-[#D4AF37] transition-all duration-300"
+                />
+              </form>
             </div>
-            <span className="text-2xl font-bold tracking-tight hidden lg:block">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB]">Cine</span>
-              <span className="text-gray-300">Vault</span>
-            </span>
-          </Link>
+          )}
 
-          {/* ── Mobile Search Bar (Middle) ────────── */}
-          <div className="flex-1 md:hidden px-2 max-w-[250px]">
-            <SearchBar />
-          </div>
+          {/* ── Desktop & Default Mobile State ── */}
+          <div className={`flex w-full items-center justify-between ${isMobileSearchOpen ? 'hidden md:flex' : 'flex'}`}>
+            
+            {/* ── Brand (Left) ──────────────────────── */}
+            <Link href="/" className="group flex items-center gap-2 md:gap-3 mr-2 md:mr-4 shrink-0">
+              <div className="relative flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-xl bg-[#D4AF37]/10 ring-1 ring-[#D4AF37]/20 transition-all group-hover:bg-[#D4AF37]/20 group-hover:ring-[#D4AF37]/40">
+                <Film size={18} className="text-[#D4AF37] transition-transform duration-300 group-hover:scale-110 md:hidden" />
+                <Film size={26} className="text-[#D4AF37] transition-transform duration-300 group-hover:scale-110 hidden md:block" />
+              </div>
+              <span className="text-2xl font-bold tracking-tight block">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB]">Cine</span>
+                <span className="text-gray-300">Vault</span>
+              </span>
+            </Link>
 
-          {/* ── Universal Filter Bar (Center) ─────── */}
-          <div className="hidden md:flex flex-1 items-center justify-center gap-4 max-w-4xl">
+            {/* ── Universal Filter Bar (Center) ─────── */}
+            <div className="hidden md:flex flex-1 items-center justify-center gap-4 max-w-4xl">
             {/* Type */}
             <div className="relative flex-1">
               <select
@@ -377,9 +417,19 @@ function NavbarContent() {
 
           {/* ── Auth & Search (Right) ─────────────── */}
           <div className="flex items-center justify-end gap-2 md:gap-5 shrink-0 ml-6">
+            
+            {/* Desktop Search */}
             <div className="hidden lg:block w-64">
               <SearchBar />
             </div>
+
+            {/* Mobile Search Icon Toggle */}
+            <button 
+              onClick={() => setIsMobileSearchOpen(true)}
+              className="md:hidden text-gray-400 hover:text-[#D4AF37] transition-colors p-2"
+            >
+              <Search size={22} />
+            </button>
 
             {user ? (
               <div className="flex items-center gap-4">
@@ -432,6 +482,7 @@ function NavbarContent() {
               <Menu size={22} />
             </button>
           </div>
+        </div>
         </nav>
       </header>
 
