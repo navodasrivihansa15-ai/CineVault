@@ -85,7 +85,7 @@ export default async function ExplorePage({
             <p className="text-silver-dark">Try exploring a different category.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
             {results.map((item) => (
               <Link key={item.id} href={`/${item.mediaType}/${item.id}`} className="w-full">
                 <MediaCard

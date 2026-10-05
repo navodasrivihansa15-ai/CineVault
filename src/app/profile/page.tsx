@@ -401,7 +401,7 @@ export default function ProfilePage() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
                   {watchlist.map((item) => (
                     <Link key={item.id} href={`/movie/${item.tmdbId}`} className="group relative flex flex-col gap-3">
                       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl border border-white/[0.06] transition-all duration-400 group-hover:border-gold/30 group-hover:shadow-gold-md group-hover:scale-[1.03]">
@@ -446,7 +446,7 @@ export default function ProfilePage() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
                   {vault.map((item) => (
                     <Link key={item.id} href={`/movie/${item.tmdbId}`} className="group relative flex flex-col gap-3">
                       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl border border-white/[0.06] transition-all duration-400 group-hover:border-gold/30 group-hover:shadow-gold-md group-hover:scale-[1.03]">

@@ -178,7 +178,7 @@ export default function MediaCard({
 
       {/* Title below poster */}
       <div className="mt-2.5 px-0.5">
-        <p className="text-sm font-medium text-silver-light line-clamp-1 transition-colors group-hover:text-gold">
+        <p className="text-sm md:text-base font-medium text-silver-light line-clamp-1 transition-colors group-hover:text-gold">
           {title}
         </p>
         <p className="text-2xs text-silver-dark mt-0.5">

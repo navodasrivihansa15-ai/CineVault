@@ -188,7 +188,7 @@ export default function PersonClient({ person }: { person: TMDBPersonDetails }) 
       {/* Grid */}
       <div className="mx-auto w-full max-w-7xl px-6 sm:px-8 md:px-12 lg:px-16">
         {filteredCredits.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
             {filteredCredits.map((item) => {
               if (!item.poster_path) return null;
               const releaseYear = item.release_date 

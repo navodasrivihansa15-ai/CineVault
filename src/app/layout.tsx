@@ -87,7 +87,9 @@ export default function RootLayout({
           <Navbar />
 
           {/* ── Main Content ──────────────────────────── */}
-          <main className="relative flex-grow">{children}</main>
+          <main className="relative flex min-h-screen flex-col pt-24">
+            {children}
+          </main>
 
           {/* ── Footer ────────────────────────────────── */}
           <footer className="mt-auto border-t border-white/[0.04] py-8">
