@@ -136,23 +136,6 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
         )}
       </div>
 
-      {/* ── Mobile Badges (Top Left & Top Right) ── */}
-      <div className={`absolute top-4 left-4 right-4 flex justify-between items-start z-20 md:hidden transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
-        {/* Featured Cinema Badge */}
-        <div className="flex items-center gap-1.5 rounded-md bg-black/40 backdrop-blur-md border border-white/10 px-2.5 py-1.5 shadow-xl">
-          <Crown size={12} className="text-gold" />
-          <span className="text-[9px] font-bold text-white tracking-widest uppercase">FEATURED CINEMA</span>
-        </div>
-        
-        {/* Rating Badge */}
-        <div className="flex items-center gap-1.5 rounded-md bg-black/40 backdrop-blur-md border border-gold/20 px-2.5 py-1.5 shadow-xl">
-          <Star size={12} className="fill-gold text-gold" />
-          <span className="text-[11px] font-bold text-gold">
-            {movie.vote_average.toFixed(1)}
-          </span>
-        </div>
-      </div>
-
       {/* Gradient Overlays */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-[#0B0C10]/80 md:via-[#0B0C10]/40 to-transparent -z-10" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#0B0C10]/80 via-transparent to-transparent -z-10 hidden md:block" />
@@ -195,10 +178,10 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
 
           {/* Rating + Buttons */}
           <div className="flex flex-wrap items-center gap-2 md:gap-4">
-            {/* Rating (Desktop Only) */}
-            <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-gold/20 bg-gold/[0.08] px-3 py-1.5">
-              <Star size={16} className="fill-gold text-gold" />
-              <span className="text-sm font-bold text-gold">
+            {/* Rating */}
+            <div className="flex items-center gap-1.5 rounded-xl border border-gold/20 bg-gold/[0.08] px-2.5 py-1.5 md:px-3 md:py-1.5">
+              <Star size={14} className="fill-gold text-gold md:w-4 md:h-4" />
+              <span className="text-xs md:text-sm font-bold text-gold">
                 {movie.vote_average.toFixed(1)}
               </span>
             </div>
