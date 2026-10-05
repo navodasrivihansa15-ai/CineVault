@@ -236,10 +236,10 @@ export default function ProfilePage() {
       <div className="mx-auto w-full max-w-7xl px-6 sm:px-8 md:px-12 lg:px-16">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row items-center md:items-end gap-6 mb-12 animate-fade-up">
+        <div className="flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6 mb-8 md:mb-12 animate-fade-up">
           <div className="flex flex-col items-center gap-3">
             <div className="relative inline-block">
-              <div className="relative h-28 w-28 rounded-full border-2 border-[#D4AF37] shadow-2xl overflow-hidden bg-navy-light flex items-center justify-center shrink-0">
+              <div className="relative h-20 w-20 md:h-32 md:w-32 rounded-full border-2 border-[#D4AF37] shadow-2xl overflow-hidden bg-navy-light flex items-center justify-center shrink-0">
                 <UserAvatar 
                   src={profile?.avatar_url || avatarUrl} 
                   className="object-cover w-full h-full" 
@@ -271,15 +271,15 @@ export default function ProfilePage() {
             )}
           </div>
           <div className="text-center md:text-left">
-            <h1 className="text-4xl font-bold tracking-tight text-white mb-2">
+            <h1 className="text-xl md:text-3xl font-bold tracking-tight text-white mb-1 md:mb-2">
               {profile?.full_name || username || "Loading..."}
             </h1>
-            <p className="text-silver-dark font-medium">Your Personal Hub</p>
+            <p className="text-xs md:text-sm text-silver-dark font-medium">{profile?.email || "Your Personal Hub"}</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex overflow-x-auto scrollbar-hide gap-2 border-b border-white/10 pb-4 mb-8">
+        <div className="grid grid-cols-2 md:flex md:flex-row md:overflow-x-auto scrollbar-hide gap-2 md:gap-4 border-b border-white/10 pb-4 mb-8 w-full">
           {(() => {
             const availableTabs = [
               { id: 'settings', label: 'Profile Settings', icon: User },
@@ -295,11 +295,12 @@ export default function ProfilePage() {
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${
-                  activeTab === tab.id ? "bg-gold/10 text-gold shadow-inner-gold" : "text-silver hover:bg-white/[0.04] hover:text-white"
+                className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1.5 md:gap-2 p-3 md:px-5 md:py-2.5 bg-white/5 md:bg-transparent hover:bg-white/10 md:hover:bg-white/[0.04] border border-white/10 md:border-transparent rounded-xl transition-all text-center md:text-left whitespace-nowrap ${
+                  activeTab === tab.id ? "bg-gold/20 md:bg-gold/10 text-gold border-gold/50 shadow-inner-gold" : "text-silver hover:text-white"
                 }`}
               >
-                <tab.icon size={18} /> {tab.label}
+                <tab.icon className={`w-5 h-5 md:w-5 md:h-5 ${activeTab === tab.id ? 'text-gold' : 'text-[#D4AF37] md:text-current'}`} /> 
+                <span className="text-xs md:text-base font-medium">{tab.label}</span>
               </button>
             ));
           })()}

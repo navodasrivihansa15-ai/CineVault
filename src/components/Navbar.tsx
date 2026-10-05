@@ -77,9 +77,9 @@ function NavbarContent() {
   
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
-  
   const [isNoticesOpen, setIsNoticesOpen] = useState(false);
   const [notices, setNotices] = useState<any[]>([]);
+  const [hasUnreadNotice, setHasUnreadNotice] = useState(false);
   const noticesRef = useRef<HTMLDivElement>(null);
   
   const [genreSearch, setGenreSearch] = useState("");
@@ -103,6 +103,7 @@ function NavbarContent() {
         setIsNoticesOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -110,13 +111,25 @@ function NavbarContent() {
   // Fetch Notices
   useEffect(() => {
     const fetchNotices = async () => {
-      const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
-      if (data) setNotices(data);
+      const { data, error } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
+      if (data && !error) setNotices(data);
     };
     fetchNotices();
 
-    const noticesChannel = supabase.channel('realtime_notices')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notices' }, fetchNotices)
+    const noticesChannel = supabase
+      .channel('notices-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notices' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setNotices((prev) => [payload.new, ...prev]);
+          setHasUnreadNotice(true); // Trigger the blinking red badge
+        } 
+        else if (payload.eventType === 'UPDATE') {
+          setNotices((prev) => prev.map(notice => notice.id === payload.new.id ? payload.new : notice));
+        } 
+        else if (payload.eventType === 'DELETE') {
+          setNotices((prev) => prev.filter(notice => notice.id !== payload.old.id));
+        }
+      })
       .subscribe();
       
     return () => {
@@ -488,14 +501,17 @@ function NavbarContent() {
             {/* NOTICES BELL */}
             <div className="relative flex items-center" ref={noticesRef}>
               <button
-                onClick={() => setIsNoticesOpen(!isNoticesOpen)}
+                onClick={() => {
+                  setIsNoticesOpen(!isNoticesOpen);
+                  if (!isNoticesOpen) setHasUnreadNotice(false); // Stop blinking when opened
+                }}
                 className="relative text-gray-400 hover:text-[#D4AF37] transition-colors p-2 rounded-full hover:bg-[#D4AF37]/10"
               >
                 <Bell size={22} />
-                {notices.length > 0 && (
+                {hasUnreadNotice && (
                   <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#D4AF37]"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                   </span>
                 )}
               </button>
