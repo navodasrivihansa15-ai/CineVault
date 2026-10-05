@@ -6,6 +6,7 @@ import {
   signInWithEmail,
   signUpWithEmail,
   signInWithOAuth,
+  supabase,
 } from "@/lib/supabase";
 
 /* ──────────────────────────────────────────────────────────
@@ -95,14 +96,23 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleGoogle = useCallback(async () => {
     setError(null);
     setLoading(true);
-    try {
-      await signInWithOAuth("google");
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Google sign-in failed";
-      setError(msg);
-      setLoading(false);
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      if (error.message.toLowerCase().includes('already registered') || error.message.toLowerCase().includes('identity')) {
+        alert('An account with this email already exists. Please log in with your password first, then link your Google account from your profile settings.');
+      } else {
+        console.error('Google Auth Error:', error.message);
+        setError(error.message);
+      }
     }
+    setLoading(false);
   }, []);
 
   if (!isOpen) return null;
