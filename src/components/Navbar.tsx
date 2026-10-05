@@ -12,7 +12,10 @@ import {
   Crown,
   ChevronDown,
   Search,
-  MessageSquare
+  MessageSquare,
+  Home,
+  Compass,
+  User
 } from "lucide-react";
 import AuthModal from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
@@ -230,14 +233,15 @@ function NavbarContent() {
   return (
     <>
       <header
-        className="fixed top-0 w-full z-50 h-24 bg-[#0B0C10]/40 backdrop-blur-2xl border-b border-[#D4AF37]/20 shadow-lg transition-all duration-300"
+        className="fixed top-0 w-full z-50 h-14 md:h-24 bg-[#0B0C10]/40 backdrop-blur-2xl border-b border-[#D4AF37]/20 shadow-lg transition-all duration-300"
       >
         <nav className="mx-auto flex h-full w-full max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
           {/* ── Brand (Left) ──────────────────────── */}
           <Link href="/" className="group flex items-center gap-3 mr-4 shrink-0">
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-[#D4AF37]/10 ring-1 ring-[#D4AF37]/20 transition-all group-hover:bg-[#D4AF37]/20 group-hover:ring-[#D4AF37]/40">
-              <Film size={26} className="text-[#D4AF37] transition-transform duration-300 group-hover:scale-110" />
+            <div className="relative flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-xl bg-[#D4AF37]/10 ring-1 ring-[#D4AF37]/20 transition-all group-hover:bg-[#D4AF37]/20 group-hover:ring-[#D4AF37]/40">
+              <Film size={18} className="text-[#D4AF37] transition-transform duration-300 group-hover:scale-110 md:hidden" />
+              <Film size={26} className="text-[#D4AF37] transition-transform duration-300 group-hover:scale-110 hidden md:block" />
             </div>
             <span className="text-2xl font-bold tracking-tight hidden lg:block">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB]">Cine</span>
@@ -366,7 +370,7 @@ function NavbarContent() {
           </div>
 
           {/* ── Auth & Search (Right) ─────────────── */}
-          <div className="flex items-center justify-end gap-5 shrink-0 ml-6">
+          <div className="flex items-center justify-end gap-2 md:gap-5 shrink-0 ml-6">
             <div className="hidden lg:block w-64">
               <SearchBar />
             </div>
@@ -375,7 +379,7 @@ function NavbarContent() {
               <div className="flex items-center gap-4">
                 <Link 
                   href="/chat" 
-                  className="text-gray-400 hover:text-[#D4AF37] transition-colors p-2 rounded-full hover:bg-[#D4AF37]/10"
+                  className="hidden md:flex text-gray-400 hover:text-[#D4AF37] transition-colors p-2 rounded-full hover:bg-[#D4AF37]/10"
                   title="Chat Hub"
                 >
                   <MessageSquare size={22} />
@@ -384,10 +388,10 @@ function NavbarContent() {
                   <UserAvatar
                     src={profile?.avatar_url || null}
                     alt={profile?.username || "Profile"}
-                    className="h-12 w-12 rounded-full border-2 border-white/10 group-hover:border-[#D4AF37] transition-colors"
+                    className="h-8 w-8 md:h-12 md:w-12 rounded-full border-2 border-white/10 group-hover:border-[#D4AF37] transition-colors"
                   />
                   {isAdmin && (
-                    <div className="absolute -bottom-1 -right-1 bg-[#0B0C10] rounded-full p-[3px] border border-[#D4AF37]">
+                    <div className="absolute -bottom-1 -right-1 bg-[#0B0C10] rounded-full p-[3px] border border-[#D4AF37] hidden md:block">
                       <Crown size={14} className="text-[#D4AF37] fill-[#D4AF37]" />
                     </div>
                   )}
@@ -398,7 +402,7 @@ function NavbarContent() {
                       signOut();
                     }
                   }}
-                  className="text-gray-400 hover:text-[#D4AF37] transition-colors p-2"
+                  className="hidden md:block text-gray-400 hover:text-[#D4AF37] transition-colors p-2"
                   title="Log Out"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
@@ -407,16 +411,16 @@ function NavbarContent() {
             ) : (
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="text-gray-400 hover:text-[#D4AF37] transition-colors p-1"
+                className="hidden md:block text-gray-400 hover:text-[#D4AF37] transition-colors p-1"
                 title="Log In"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-log-out -rotate-90 transition-transform duration-300"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
               </button>
             )}
 
-            {/* Mobile Menu Toggle */}
+            {/* Mobile Menu Toggle (Hidden in app-like mode) */}
             <button
-              className="text-gray-400 hover:text-[#D4AF37] transition-colors md:hidden shrink-0 ml-2"
+              className="hidden text-gray-400 hover:text-[#D4AF37] transition-colors shrink-0 ml-2"
               onClick={() => setMobileOpen(true)}
             >
               <Menu size={22} />
@@ -499,6 +503,32 @@ function NavbarContent() {
       )}
 
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+
+      {/* ── Mobile Bottom Navigation ──────────────── */}
+      <div className="fixed bottom-0 w-full z-50 bg-[#0B0C10]/80 backdrop-blur-xl border-t border-white/10 md:hidden pb-safe">
+        <div className="flex justify-around items-center h-16 px-2">
+          <Link href="/" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/' ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>
+            <Home size={22} />
+            <span className="text-[10px] font-medium">Home</span>
+          </Link>
+          <Link href="/explore" className={`flex flex-col items-center gap-1 transition-colors ${pathname.startsWith('/explore') ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>
+            <Compass size={22} />
+            <span className="text-[10px] font-medium">Explore</span>
+          </Link>
+          <Link href="/search" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/search' ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>
+            <Search size={22} />
+            <span className="text-[10px] font-medium">Search</span>
+          </Link>
+          <Link href="/chat" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/chat' ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>
+            <MessageSquare size={22} />
+            <span className="text-[10px] font-medium">Chat</span>
+          </Link>
+          <Link href="/profile" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/profile' ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>
+            <User size={22} />
+            <span className="text-[10px] font-medium">Profile</span>
+          </Link>
+        </div>
+      </div>
     </>
   );
 }
