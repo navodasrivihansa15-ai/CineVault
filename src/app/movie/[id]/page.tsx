@@ -27,7 +27,7 @@ export default async function MovieDetailsPage({ params }: { params: { id: strin
     <div className="flex flex-col min-h-screen bg-oled pb-20">
       <BackButton />
       {/* Background Image Wrapper - Full Bleed */}
-      <div className="absolute inset-0 top-0 w-full h-[70vh] md:h-screen overflow-hidden bg-black pointer-events-none">
+      <div className="absolute inset-0 mt-14 md:mt-0 w-full h-[70vh] md:h-screen overflow-hidden bg-black pointer-events-none">
         <div className="absolute inset-0">
           {movie.backdrop_path ? (
             <Image
