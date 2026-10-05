@@ -549,11 +549,11 @@ function NavbarContent() {
                     className="h-8 w-8 md:h-12 md:w-12 rounded-full border-2 border-white/10 group-hover:border-[#D4AF37] transition-colors"
                   />
                   {(profile?.role === "founder" || user?.email === "navodasrivihansa15@gmail.com") ? (
-                    <div className="absolute -bottom-1 -right-1 bg-[#0B0C10] rounded-full p-[3px] border border-[#D4AF37] hidden md:block">
+                    <div className="absolute -bottom-1 -right-1 bg-[#0B0C10] rounded-full p-[3px] border border-[#D4AF37]">
                       <Crown size={14} className="text-[#D4AF37] fill-[#D4AF37]" />
                     </div>
                   ) : profile?.role === "admin" ? (
-                    <div className="absolute -bottom-1 -right-1 bg-[#0B0C10] rounded-full p-[3px] border border-blue-500 hidden md:block">
+                    <div className="absolute -bottom-1 -right-1 bg-[#0B0C10] rounded-full p-[3px] border border-blue-500">
                       <ShieldCheck size={14} className="text-blue-500 fill-blue-500/20" />
                     </div>
                   ) : null}
