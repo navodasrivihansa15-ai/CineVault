@@ -12,7 +12,7 @@ import UserAvatar from "@/components/UserAvatar";
 import AdminDashboard from "@/components/AdminDashboard";
 
 export default function ProfilePage() {
-  const { user, session, signOut } = useAuth();
+  const { user, session, signOut, loading: authLoading } = useAuth();
   
   const [activeTab, setActiveTab] = useState<string>("settings");
   
@@ -66,8 +66,12 @@ export default function ProfilePage() {
       }
     };
     
-    fetchProfile();
-  }, []);
+    if (user) {
+      fetchProfile();
+    } else if (!authLoading) {
+      setProfileLoading(false);
+    }
+  }, [user, authLoading]);
 
   // Fetch Watchlist
   const fetchWatchlist = async () => {
@@ -223,6 +227,18 @@ export default function ProfilePage() {
       fetchVault();
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-oled pb-20">
+        <div className="text-center animate-fade-up">
+          <Loader2 size={48} className="animate-spin mx-auto mb-4 text-gold/50" />
+          <h2 className="text-2xl font-bold text-white mb-2">Loading Profile</h2>
+          <p className="text-silver-dark mb-6">Authenticating your vault access...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
