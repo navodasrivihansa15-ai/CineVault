@@ -21,6 +21,9 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
   const topMovies = movies.slice(0, 8);
 
   // Auto-slide
@@ -73,6 +76,31 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
     startAutoSlide();
   }, [topMovies.length, startAutoSlide]);
 
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      goNext();
+    }
+    if (isRightSwipe) {
+      goPrev();
+    }
+  };
+
   if (topMovies.length === 0) return null;
 
   const movie = topMovies[currentIndex];
@@ -82,7 +110,12 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
     .filter(Boolean);
 
   return (
-    <section className="relative h-[85vh] min-h-[600px] max-h-[900px] w-full overflow-hidden">
+    <section 
+      className="relative h-[85vh] min-h-[600px] max-h-[900px] w-full overflow-hidden"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       {/* Background Image */}
       <div
         className={`absolute inset-0 w-full h-full -z-10 transition-opacity duration-700 ${
@@ -176,11 +209,11 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setCurrentIndex((prev) => (prev === 0 ? topMovies.length - 1 : prev - 1));
+          goPrev();
         }}
         className="
           absolute left-4 top-1/2 -translate-y-1/2 z-50
-          flex h-11 w-11 items-center justify-center rounded-full
+          hidden md:flex h-11 w-11 items-center justify-center rounded-full
           border border-white/10 bg-oled/40 backdrop-blur-md text-silver
           transition-all duration-300
           hover:border-gold/30 hover:text-gold hover:bg-oled/60
@@ -194,11 +227,11 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setCurrentIndex((prev) => (prev + 1) % topMovies.length);
+          goNext();
         }}
         className="
           absolute right-4 top-1/2 -translate-y-1/2 z-50
-          flex h-11 w-11 items-center justify-center rounded-full
+          hidden md:flex h-11 w-11 items-center justify-center rounded-full
           border border-white/10 bg-oled/40 backdrop-blur-md text-silver
           transition-all duration-300
           hover:border-gold/30 hover:text-gold hover:bg-oled/60

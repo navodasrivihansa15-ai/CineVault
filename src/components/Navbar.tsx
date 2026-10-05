@@ -23,18 +23,19 @@ import { supabase } from "@/lib/supabase";
 import UserAvatar from "@/components/UserAvatar";
 import SearchBar from "@/components/SearchBar";
 import { LANGUAGES } from "@/lib/languages";
+import MobileDropdownFilters from "@/components/MobileDropdownFilters";
 
 /* ──────────────────────────────────────────────────────────
    Universal Command Center Navbar
    ────────────────────────────────────────────────────────── */
 
-const MEDIA_TYPES = [
+export const MEDIA_TYPES = [
   { value: "all", label: "All" },
   { value: "movie", label: "Movies" },
   { value: "tv", label: "TV Shows" },
 ];
 
-const GENRES = [
+export const GENRES = [
   { value: "", label: "All Genres" },
   { value: "28", label: "Action" },
   { value: "12", label: "Adventure" },
@@ -434,31 +435,7 @@ function NavbarContent() {
         </nav>
       </header>
 
-      {/* ── Mobile Filter Bar (Sticky below Top Nav) ── */}
-      <div className="fixed top-14 w-full z-40 bg-[#0B0C10]/90 backdrop-blur-xl border-b border-white/5 py-2 px-4 flex items-center gap-3 overflow-x-auto whitespace-nowrap scrollbar-hide md:hidden">
-        {/* Type Pills */}
-        {MEDIA_TYPES.map(m => (
-          <button
-            key={m.value}
-            onClick={() => handleFilterChange("type", m.value)}
-            className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors flex-shrink-0 ${type === m.value ? 'bg-[#D4AF37] text-black border-[#D4AF37]' : 'border-white/20 text-gray-300'}`}
-          >
-            {m.label}
-          </button>
-        ))}
-        {/* Divider */}
-        <div className="w-[1px] h-6 bg-white/20 flex-shrink-0 mx-1" />
-        {/* Genre Pills */}
-        {GENRES.filter(g => g.value !== "").map(g => (
-          <button
-            key={g.value}
-            onClick={() => handleFilterChange("genre", genre === g.value ? "" : g.value)}
-            className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors flex-shrink-0 ${genre === g.value ? 'bg-[#D4AF37] text-black border-[#D4AF37]' : 'border-white/20 text-gray-300'}`}
-          >
-            {g.label}
-          </button>
-        ))}
-      </div>
+      <MobileDropdownFilters />
 
       {/* ── Mobile Navigation Drawer ──────────────── */}
       {mobileOpen && (
