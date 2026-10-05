@@ -66,6 +66,8 @@ function NavbarContent() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const showMobileFilters = pathname === '/' || pathname.startsWith('/explore');
   
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -486,7 +488,10 @@ function NavbarContent() {
         </nav>
       </header>
 
-      <MobileDropdownFilters />
+      {showMobileFilters && <MobileDropdownFilters />}
+
+      {/* ── Dynamic Invisible Spacer ── */}
+      <div className={`w-full shrink-0 ${showMobileFilters ? 'h-28 md:h-24' : 'h-14 md:h-24'}`} aria-hidden="true" />
 
       {/* ── Mobile Navigation Drawer ──────────────── */}
       {mobileOpen && (
