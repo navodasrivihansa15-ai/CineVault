@@ -238,7 +238,7 @@ function NavbarContent() {
         <nav className="mx-auto flex h-full w-full max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
           {/* ── Brand (Left) ──────────────────────── */}
-          <Link href="/" className="group flex items-center gap-3 mr-4 shrink-0">
+          <Link href="/" className="group flex items-center gap-2 md:gap-3 mr-2 md:mr-4 shrink-0">
             <div className="relative flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-xl bg-[#D4AF37]/10 ring-1 ring-[#D4AF37]/20 transition-all group-hover:bg-[#D4AF37]/20 group-hover:ring-[#D4AF37]/40">
               <Film size={18} className="text-[#D4AF37] transition-transform duration-300 group-hover:scale-110 md:hidden" />
               <Film size={26} className="text-[#D4AF37] transition-transform duration-300 group-hover:scale-110 hidden md:block" />
@@ -248,6 +248,11 @@ function NavbarContent() {
               <span className="text-gray-300">Vault</span>
             </span>
           </Link>
+
+          {/* ── Mobile Search Bar (Middle) ────────── */}
+          <div className="flex-1 md:hidden px-2 max-w-[250px]">
+            <SearchBar />
+          </div>
 
           {/* ── Universal Filter Bar (Center) ─────── */}
           <div className="hidden md:flex flex-1 items-center justify-center gap-4 max-w-4xl">
@@ -429,6 +434,32 @@ function NavbarContent() {
         </nav>
       </header>
 
+      {/* ── Mobile Filter Bar (Sticky below Top Nav) ── */}
+      <div className="fixed top-14 w-full z-40 bg-[#0B0C10]/90 backdrop-blur-xl border-b border-white/5 py-2 px-4 flex items-center gap-3 overflow-x-auto whitespace-nowrap scrollbar-hide md:hidden">
+        {/* Type Pills */}
+        {MEDIA_TYPES.map(m => (
+          <button
+            key={m.value}
+            onClick={() => handleFilterChange("type", m.value)}
+            className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors flex-shrink-0 ${type === m.value ? 'bg-[#D4AF37] text-black border-[#D4AF37]' : 'border-white/20 text-gray-300'}`}
+          >
+            {m.label}
+          </button>
+        ))}
+        {/* Divider */}
+        <div className="w-[1px] h-6 bg-white/20 flex-shrink-0 mx-1" />
+        {/* Genre Pills */}
+        {GENRES.filter(g => g.value !== "").map(g => (
+          <button
+            key={g.value}
+            onClick={() => handleFilterChange("genre", genre === g.value ? "" : g.value)}
+            className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-colors flex-shrink-0 ${genre === g.value ? 'bg-[#D4AF37] text-black border-[#D4AF37]' : 'border-white/20 text-gray-300'}`}
+          >
+            {g.label}
+          </button>
+        ))}
+      </div>
+
       {/* ── Mobile Navigation Drawer ──────────────── */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[60] flex flex-col bg-[#0B0C10]/95 backdrop-blur-3xl animate-in fade-in zoom-in duration-300">
@@ -514,10 +545,6 @@ function NavbarContent() {
           <Link href="/explore" className={`flex flex-col items-center gap-1 transition-colors ${pathname.startsWith('/explore') ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>
             <Compass size={22} />
             <span className="text-[10px] font-medium">Explore</span>
-          </Link>
-          <Link href="/search" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/search' ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>
-            <Search size={22} />
-            <span className="text-[10px] font-medium">Search</span>
           </Link>
           <Link href="/chat" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/chat' ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white/80'}`}>
             <MessageSquare size={22} />
