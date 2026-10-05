@@ -203,57 +203,58 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-[#0B0C10] pt-24 pb-4 px-4 max-w-5xl mx-auto animate-fade-up">
+    <div className="flex flex-col w-full h-screen bg-[#0B0C10] pt-16 md:pt-28 pb-20 md:pb-6 px-2 md:px-4 max-w-5xl mx-auto overflow-hidden animate-fade-up">
       
       {/* Top Tabs */}
-      <div className="flex justify-center gap-4 mb-6 shrink-0">
+      <div className="flex justify-center gap-2 md:gap-4 mb-4 md:mb-6 shrink-0">
         <button
           onClick={() => setActiveMainTab("global")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all shadow-lg ${
+          className={`flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-base font-bold transition-all shadow-lg ${
             activeMainTab === "global" 
               ? "bg-[#D4AF37] text-[#0B0C10] ring-2 ring-[#D4AF37]/50" 
               : "bg-white/[0.05] text-white hover:bg-white/10 border border-white/10"
           }`}
         >
-          <Users size={18} /> Global Community
+          <Users size={18} /> <span className="hidden sm:inline">Global Community</span><span className="sm:hidden">Global</span>
         </button>
         <button
           onClick={() => {
             setActiveMainTab("dm");
             if (!activeAdminId && admins.length > 0) setActiveAdminId(admins[0].id);
           }}
-          className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all shadow-lg ${
+          className={`flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-base font-bold transition-all shadow-lg ${
             activeMainTab === "dm" 
               ? "bg-[#D4AF37] text-[#0B0C10] ring-2 ring-[#D4AF37]/50" 
               : "bg-white/[0.05] text-white hover:bg-white/10 border border-white/10"
           }`}
         >
-          <MessageSquare size={18} /> Direct Messages
+          <MessageSquare size={18} /> <span className="hidden sm:inline">Direct Messages</span><span className="sm:hidden">DMs</span>
         </button>
       </div>
 
       {/* Main Chat Interface */}
-      <div className="flex flex-1 bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
+      <div className="flex flex-row flex-1 w-full h-full bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
         
         {/* DM Sidebar (Only visible in Direct tab) */}
         {activeMainTab === "dm" && (
-          <div className="w-1/3 min-w-[200px] max-w-[300px] border-r border-white/10 bg-black/30 flex flex-col">
-            <div className="p-4 border-b border-white/10">
-              <h3 className="text-sm font-semibold text-[#D4AF37] uppercase tracking-wider">Direct Messages</h3>
+          <div className="w-20 md:w-80 flex-shrink-0 border-r border-white/10 bg-black/30 flex flex-col">
+            <div className="p-4 border-b border-white/10 flex items-center justify-center md:justify-start">
+              <h3 className="hidden md:block text-sm font-semibold text-[#D4AF37] uppercase tracking-wider">Direct Messages</h3>
+              <MessageSquare className="md:hidden text-[#D4AF37]" size={20} />
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
               {admins.filter(a => a.id !== user?.id).map((admin) => (
                 <button
                   key={admin.id}
                   onClick={() => setActiveAdminId(admin.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors ${
+                  className={`w-full flex items-center justify-center md:justify-start gap-3 md:px-3 py-3 rounded-xl transition-colors ${
                     activeAdminId === admin.id ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5"
                   }`}
                 >
                   <div className="relative w-10 h-10 rounded-full shrink-0 border border-white/10 overflow-hidden">
                     <UserAvatar src={admin.avatar_url} />
                   </div>
-                  <div className="text-left flex-1 truncate">
+                  <div className="hidden md:flex text-left flex-1 flex-col truncate">
                     <div className="font-semibold text-sm flex items-center text-white">
                       <span className="truncate">{admin.full_name || admin.username}</span>
                       {renderBadge(admin.role)}
@@ -270,17 +271,17 @@ export default function ChatPage() {
         )}
 
         {/* Chat Window */}
-        <div className="flex-1 flex flex-col relative overflow-hidden bg-[#0B0C10]/50 backdrop-blur-sm">
+        <div className="flex-1 flex flex-col relative overflow-hidden bg-[#0B0C10]/50 backdrop-blur-sm w-full h-full">
           {/* Header */}
-          <div className="h-16 border-b border-white/10 bg-black/40 flex items-center px-6 shrink-0 shadow-md z-10">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <div className="h-14 md:h-16 border-b border-white/10 bg-black/40 flex items-center px-4 md:px-6 shrink-0 shadow-md z-10">
+            <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
               {activeMainTab === "global" ? (
                 <>
-                  <Users className="text-[#D4AF37]" /> Global Public Chat
+                  <Users className="text-[#D4AF37] w-5 h-5 md:w-6 md:h-6" /> Global Public Chat
                 </>
               ) : activeAdminId ? (
                 <>
-                  <ShieldCheck className="text-blue-400" /> Private Support Thread
+                  <ShieldCheck className="text-blue-400 w-5 h-5 md:w-6 md:h-6" /> Private Support Thread
                 </>
               ) : (
                 "Select a conversation"
@@ -289,7 +290,7 @@ export default function ChatPage() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 custom-scrollbar">
             {activeMainTab === "global" ? (
               globalMessages.length === 0 ? (
                 <div className="text-center text-gray-500 mt-10">Welcome to the Global Community! Be the first to say hello.</div>
@@ -354,18 +355,18 @@ export default function ChatPage() {
                 })
               )
             )}
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} className="shrink-0" />
           </div>
 
           {/* Input */}
           {(activeMainTab === "global" || (activeMainTab === "dm" && activeAdminId)) && (
-            <div className="p-4 bg-black/60 border-t border-white/10 shrink-0 backdrop-blur-md z-10">
-              <form onSubmit={handleSendMessage} className="flex items-end gap-3 max-w-4xl mx-auto">
+            <div className="p-3 md:p-4 border-t border-white/10 bg-[#0B0C10] flex-shrink-0 w-full z-10">
+              <form onSubmit={handleSendMessage} className="flex items-end gap-2 md:gap-3 max-w-4xl mx-auto">
                 <textarea
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder={activeMainTab === "global" ? "Message the community..." : "Send a secure direct message..."}
-                  className="flex-1 bg-[#0B0C10] border border-white/20 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] resize-none h-12 max-h-32 scrollbar-hide shadow-inner"
+                  className="flex-1 bg-[#0B0C10] border border-white/20 rounded-xl px-4 py-2 md:py-3 text-sm text-white focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] resize-none h-10 md:h-12 max-h-32 scrollbar-hide shadow-inner"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -376,9 +377,9 @@ export default function ChatPage() {
                 <button
                   type="submit"
                   disabled={!newMessage.trim()}
-                  className="bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0B0C10] p-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 shadow-lg shadow-[#D4AF37]/20"
+                  className="bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0B0C10] p-2.5 md:p-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 shadow-lg shadow-[#D4AF37]/20"
                 >
-                  <Send size={20} />
+                  <Send className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
               </form>
             </div>

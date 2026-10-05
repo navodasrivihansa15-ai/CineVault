@@ -239,7 +239,7 @@ function NavbarContent() {
   return (
     <>
       <header
-        className="fixed top-0 w-full z-50 h-14 md:h-24 bg-[#0B0C10]/40 backdrop-blur-2xl border-b border-[#D4AF37]/20 shadow-lg transition-all duration-300"
+        className="fixed top-0 w-full z-50 h-14 md:h-24 bg-[#0B0C10]/40 backdrop-blur-xl supports-[backdrop-filter]:bg-black/20 border-b border-white/10 shadow-lg transition-all duration-300"
       >
         <nav className="mx-auto flex h-full w-full max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
           

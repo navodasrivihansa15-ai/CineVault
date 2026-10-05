@@ -76,7 +76,7 @@ function MobileDropdownFiltersContent() {
   };
 
   return (
-    <div className="fixed top-14 w-full z-40 bg-[#0B0C10]/95 backdrop-blur-xl border-b border-white/10 md:hidden" ref={containerRef}>
+    <div className="fixed top-14 w-full z-40 bg-[#0B0C10]/40 backdrop-blur-xl supports-[backdrop-filter]:bg-black/20 border-b border-white/10 md:hidden" ref={containerRef}>
       <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide p-2 w-full">
         {/* Type Button */}
         <button 
