@@ -111,7 +111,7 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
 
   return (
     <section 
-      className="relative w-full h-[85vh] min-h-[600px] max-h-[900px] overflow-hidden -mt-28 md:-mt-24 z-0"
+      className="relative w-full h-[85vh] min-h-[600px] max-h-[900px] overflow-hidden mt-0 md:-mt-24 z-0"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
