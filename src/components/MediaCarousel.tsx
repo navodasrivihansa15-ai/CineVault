@@ -14,6 +14,7 @@ export interface MediaCardItem {
   id: number;
   title: string;
   posterPath: string | null;
+  backdropPath?: string | null;
   rating: number;
   year: string;
   mediaType: "movie" | "tv";

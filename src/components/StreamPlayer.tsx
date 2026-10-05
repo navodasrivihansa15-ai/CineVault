@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Server, MonitorPlay, Film, Loader2 } from "lucide-react";
+import { Server, MonitorPlay, Film, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export interface StreamPlayerProps {
@@ -23,6 +23,33 @@ export default function StreamPlayer({
   const [videoSrc, setVideoSrc] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [premiumUrl, setPremiumUrl] = useState<string | null>(null);
+
+  const formatEmbedUrl = (url: string) => {
+    if (!url) return "";
+    try {
+      if (url.includes("drive.google.com/file/d/")) {
+        return url.replace(/\/view.*$/, "/preview");
+      }
+      if (url.includes("youtube.com") || url.includes("youtu.be")) {
+        if (url.includes("/embed/")) return url;
+        let videoId = "";
+        let listId = "";
+        try {
+          const urlObj = new URL(url.startsWith("http") ? url : `https://${url}`);
+          if (url.includes("youtu.be/")) videoId = urlObj.pathname.slice(1);
+          else videoId = urlObj.searchParams.get("v") || "";
+          listId = urlObj.searchParams.get("list") || "";
+        } catch (e) {
+          if (url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
+        }
+        if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1${listId ? `&list=${listId}` : ''}`;
+        else if (listId) return `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=1&rel=0&modestbranding=1`;
+      }
+      return url; // TeraBox and other links pass through
+    } catch (e) {
+      return url;
+    }
+  };
 
   const getDefaultStreamUrl = (server: ServerOption) => {
     switch (server) {
@@ -134,9 +161,10 @@ export default function StreamPlayer({
         }
 
         if (foundUrl) {
-          setPremiumUrl(foundUrl);
+          const finalUrl = formatEmbedUrl(foundUrl);
+          setPremiumUrl(finalUrl);
           setActiveServer("Server 2");
-          setVideoSrc(foundUrl);
+          setVideoSrc(finalUrl);
         } else {
           setPremiumUrl(null);
           setActiveServer("Server 1");
@@ -174,6 +202,8 @@ export default function StreamPlayer({
     { id: "Server 3", label: "MultiEmbed", icon: Film },
   ];
 
+  const isExternalPlayer = videoSrc && (videoSrc.includes("terabox.com") || videoSrc.includes("teraboxapp.com") || videoSrc.includes("1024tera.com"));
+
   return (
     <div className="w-full space-y-4 animate-fade-up">
       {/* 16:9 Video Container */}
@@ -184,6 +214,25 @@ export default function StreamPlayer({
             <p className="mt-4 text-sm font-medium text-silver-light animate-pulse">
               Finding best stream...
             </p>
+          </div>
+        ) : isExternalPlayer ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0B0C10] text-center p-6 border border-white/5">
+            <div className="bg-gold/10 p-6 rounded-full mb-6">
+              <MonitorPlay className="w-12 h-12 text-gold animate-pulse" />
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-3">Premium External Stream</h3>
+            <p className="text-silver max-w-md mx-auto mb-8 leading-relaxed text-sm">
+              This high-quality stream is hosted on a secure external server. Click the button below to watch instantly in a new tab.
+            </p>
+            <a 
+              href={videoSrc} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="group flex items-center justify-center gap-3 bg-gold text-oled font-bold text-base px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-gold-md"
+            >
+              Watch Now
+              <ExternalLink className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
+            </a>
           </div>
         ) : (
           <iframe

@@ -184,7 +184,7 @@ export default function ChatPage() {
     return () => {
       supabase.removeChannel(chatChannel);
     };
-  }, [user]);
+  }, [user, isAuthLoading]);
 
   // Fetch Direct Messages when selecting an admin
   useEffect(() => {
@@ -209,7 +209,7 @@ export default function ChatPage() {
     };
 
     fetchDMs();
-  }, [activeAdminId, activeMainTab, user]);
+  }, [activeAdminId, activeMainTab, user, isAuthLoading]);
 
   const scrollToBottom = () => {
     setTimeout(() => {

@@ -10,6 +10,7 @@ import {
   X,
   Film,
   Crown,
+  ShieldCheck,
   ChevronDown,
   Search,
   MessageSquare,
@@ -73,7 +74,7 @@ function NavbarContent() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<{username: string, avatar_url: string} | null>(null);
+  const [profile, setProfile] = useState<{username: string, avatar_url: string, role?: string} | null>(null);
   
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
@@ -208,7 +209,7 @@ function NavbarContent() {
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select("username, avatar_url")
+          .select("username, avatar_url, role")
           .eq("id", user.id)
           .single();
         if (data && !error) {
@@ -307,7 +308,7 @@ function NavbarContent() {
     setMobileOpen(false);
   };
 
-  const isAdmin = user?.email === "navodasrivihansa15@gmail.com";
+
 
   return (
     <>
@@ -547,11 +548,15 @@ function NavbarContent() {
                     alt={profile?.username || "Profile"}
                     className="h-8 w-8 md:h-12 md:w-12 rounded-full border-2 border-white/10 group-hover:border-[#D4AF37] transition-colors"
                   />
-                  {isAdmin && (
+                  {(profile?.role === "founder" || user?.email === "navodasrivihansa15@gmail.com") ? (
                     <div className="absolute -bottom-1 -right-1 bg-[#0B0C10] rounded-full p-[3px] border border-[#D4AF37] hidden md:block">
                       <Crown size={14} className="text-[#D4AF37] fill-[#D4AF37]" />
                     </div>
-                  )}
+                  ) : profile?.role === "admin" ? (
+                    <div className="absolute -bottom-1 -right-1 bg-[#0B0C10] rounded-full p-[3px] border border-blue-500 hidden md:block">
+                      <ShieldCheck size={14} className="text-blue-500 fill-blue-500/20" />
+                    </div>
+                  ) : null}
                 </Link>
                 <button
                   onClick={() => {

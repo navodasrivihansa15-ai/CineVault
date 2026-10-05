@@ -74,7 +74,7 @@ const formatVideoUrl = (url: string, mode: 'single' | 'playlist'): string => {
     try {
       const urlObj = new URL(url.startsWith("http") ? url : `https://${url}`);
       let videoId = "";
-      let listId = urlObj.searchParams.get("list") || "";
+      const listId = urlObj.searchParams.get("list") || "";
       
       if (url.includes("youtu.be/")) {
         videoId = urlObj.pathname.slice(1);
@@ -136,7 +136,32 @@ export default function CineVaultPlayerModal({
   
   const backdropRef = useRef<HTMLDivElement>(null);
   
-  const isAdmin = user?.email === "navodasrivihansa15@gmail.com";
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkAdmin = async () => {
+      if (!user) {
+        if (isMounted) setIsAdmin(false);
+        return;
+      }
+      const role = (user as any)?.role || user?.user_metadata?.role;
+      if (user.email === "navodasrivihansa15@gmail.com" || ["admin", "founder"].includes(role)) {
+        if (isMounted) setIsAdmin(true);
+        return;
+      }
+      const { data } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+      if (isMounted && data && ["admin", "founder"].includes(data.role)) {
+        setIsAdmin(true);
+      } else if (isMounted) {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   // Fetch Stream Link
   const fetchStreamLink = async () => {
@@ -238,6 +263,7 @@ export default function CineVaultPlayerModal({
       fetchAllEpisodes();
       setEditMode(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, tmdbId, mediaType, season, episode]); // We trigger fetch on open
 
   // When currentEpisode/selectedSeason changes (via sidebar), update the stream URL instantly
@@ -248,6 +274,7 @@ export default function CineVaultPlayerModal({
         setStreamUrl(epData.stream_url);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentEpisode, selectedSeason, allEpisodes]);
 
   // Close on Escape

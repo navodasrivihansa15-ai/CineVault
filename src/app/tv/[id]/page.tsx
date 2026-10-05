@@ -47,7 +47,7 @@ export default async function TVDetailsPage({
     <div className="flex flex-col min-h-screen bg-oled pb-20">
       <BackButton />
       {/* Parallax Header */}
-      <section className="relative h-[40vh] md:h-[70vh] min-h-[300px] md:min-h-[500px] w-full overflow-hidden">
+      <section className="relative h-[40vh] md:h-[50vh] min-h-[300px] md:min-h-[400px] w-full overflow-hidden">
         <div className="absolute inset-0 fixed-bg pointer-events-none">
           {tv.backdrop_path ? (
             <Image
@@ -66,7 +66,7 @@ export default async function TVDetailsPage({
       </section>
 
       {/* Content Section Overlay */}
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-8 md:px-12 lg:px-16 relative z-10 -mt-16 md:-mt-32">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-8 md:px-12 lg:px-16 relative z-10 -mt-16 md:-mt-48">
         <div className="flex flex-col md:flex-row gap-4 md:gap-8">
           
           {/* Mobile Top Row: Poster + Title/Meta */}

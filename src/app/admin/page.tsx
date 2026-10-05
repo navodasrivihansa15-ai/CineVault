@@ -33,8 +33,25 @@ export default async function AdminDashboard() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Check if unauthenticated OR email is not the admin email
-  if (!user || user.email !== "navodasrivihansa15@gmail.com") {
+  // Fetch the user's role from their profile
+  let hasAdminAccess = false;
+  if (user) {
+    if (user.email === "navodasrivihansa15@gmail.com" || ["admin", "founder"].includes((user as any)?.role || user?.user_metadata?.role)) {
+      hasAdminAccess = true;
+    } else {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      if (profile && ["admin", "founder"].includes(profile.role)) {
+        hasAdminAccess = true;
+      }
+    }
+  }
+
+  // Check if unauthenticated OR does not have admin access
+  if (!user || !hasAdminAccess) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-oled px-4 text-center">
         <ShieldX className="mb-6 h-20 w-20 text-red-500/80 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]" />

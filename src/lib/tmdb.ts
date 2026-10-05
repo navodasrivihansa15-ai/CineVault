@@ -153,6 +153,34 @@ export async function fetchTrending(
   );
 }
 
+// ── New Releases (Movies + TV) ─────────────────────────
+
+export async function fetchNewReleases(
+  page = 1,
+  revalidate = 3600
+): Promise<TMDBPaginatedResponse<TMDBMovie | TMDBTVShow>> {
+  const [moviesRes, tvRes] = await Promise.all([
+    tmdbFetch<TMDBPaginatedResponse<TMDBMovie>>("/movie/now_playing", { language: "en-US", page }, revalidate),
+    tmdbFetch<TMDBPaginatedResponse<TMDBTVShow>>("/tv/on_the_air", { language: "en-US", page }, revalidate)
+  ]);
+
+  const movies = (moviesRes.results || []).map((m: any) => ({ ...m, media_type: 'movie', date: m.release_date }));
+  const tv = (tvRes.results || []).map((t: any) => ({ ...t, media_type: 'tv', date: t.first_air_date }));
+
+  // Combine and sort by date descending
+  const combined = [...movies, ...tv]
+    .filter(item => item.date)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 20);
+
+  return {
+    page: 1,
+    results: combined as unknown as (TMDBMovie | TMDBTVShow)[],
+    total_pages: 1,
+    total_results: combined.length
+  };
+}
+
 // ── Discover (with Filters) ──────────────────────────────
 
 /**

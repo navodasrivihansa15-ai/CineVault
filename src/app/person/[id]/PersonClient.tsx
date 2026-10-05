@@ -143,14 +143,19 @@ export default function PersonClient({ person }: { person: TMDBPersonDetails }) 
               </div>
             </div>
 
-            <div className="max-w-4xl relative mt-2">
-              <div className={`text-sm leading-relaxed text-silver whitespace-pre-wrap transition-all duration-300 ${!showFullBio ? "line-clamp-4" : ""}`}>
-                {person.biography || "No biography available."}
+            <div className="max-w-4xl mt-2">
+              <div className={`relative ${!showFullBio ? "overflow-hidden max-h-32" : ""}`}>
+                <div className="text-sm leading-relaxed text-silver whitespace-pre-wrap transition-all duration-300">
+                  {person.biography || "No biography available."}
+                </div>
+                {!showFullBio && person.biography && person.biography.length > 250 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0B0C10] to-transparent pointer-events-none" />
+                )}
               </div>
               {person.biography && person.biography.length > 250 && (
                 <button 
                   onClick={() => setShowFullBio(!showFullBio)}
-                  className="mt-2 text-gold hover:text-white text-sm font-semibold transition-colors"
+                  className="mt-2 text-gold hover:text-white text-sm font-semibold transition-colors relative z-10"
                 >
                   {showFullBio ? "Show Less" : "Read More"}
                 </button>
@@ -223,6 +228,7 @@ export default function PersonClient({ person }: { person: TMDBPersonDetails }) 
                     rating={item.vote_average || 0}
                     year={releaseYear}
                     mediaType={item.media_type as "movie" | "tv"}
+                    className="w-full h-full"
                   />
                 </Link>
               );

@@ -6,11 +6,12 @@ import {
   fetchGenres,
   multiSearch,
   discoverMovies,
+  fetchNewReleases,
 } from "@/lib/tmdb";
 
 /* ──────────────────────────────────────────────────────────
    TMDB API Proxy — keeps API keys server-side
-   GET /api/tmdb?action=trending|popular|topRatedTV|genres|search
+   GET /api/tmdb?action=trending|popular|topRatedTV|genres|search|newReleases
    ────────────────────────────────────────────────────────── */
 
 export async function GET(request: Request) {
@@ -19,6 +20,12 @@ export async function GET(request: Request) {
 
   try {
     switch (action) {
+      case "newReleases": {
+        const page = Number(searchParams.get("page") || 1);
+        const data = await fetchNewReleases(page);
+        return NextResponse.json(data);
+      }
+
       case "trending": {
         const window = (searchParams.get("window") as "day" | "week") || "day";
         const page = Number(searchParams.get("page") || 1);
