@@ -149,22 +149,6 @@ export default async function MovieDetailsPage({ params }: { params: { id: strin
                 </div>
               )}
             </div>
-              {uniqueWriters.length > 0 && (
-                <div className="flex items-start gap-2">
-                  <span className="text-silver-dark font-medium min-w-[80px]">Written By</span>
-                  <div className="flex flex-wrap gap-x-2 gap-y-1">
-                    {uniqueWriters.map((w: any, i: number) => (
-                      <span key={w.id} className="text-silver-light">
-                        <Link href={`/person/${w.id}`} className="hover:text-gold transition-colors">
-                          {w.name}
-                        </Link>
-                        {i < uniqueWriters.length - 1 && ","}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
 
             <MediaActions
               mediaId={movie.id}
@@ -177,7 +161,7 @@ export default async function MovieDetailsPage({ params }: { params: { id: strin
             />
           </div>
         </div>
-      </section>
+      </div>
 
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-8 md:px-12 lg:px-16 space-y-8 md:space-y-16 mt-4 md:mt-8">
         

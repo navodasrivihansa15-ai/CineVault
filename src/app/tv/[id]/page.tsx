@@ -180,7 +180,7 @@ export default async function TVDetailsPage({
             />
           </div>
         </div>
-      </section>
+      </div>
 
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-8 md:px-12 lg:px-16 space-y-8 md:space-y-16 mt-4 md:mt-8">
         

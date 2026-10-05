@@ -65,49 +65,66 @@ export default function PersonClient({ person }: { person: TMDBPersonDetails }) 
   const bestBackdrop = person.profile_path || person.combined_credits?.cast?.[0]?.backdrop_path;
 
   return (
-    <div className="flex flex-col min-h-screen bg-oled pb-20">
-      <BackButton />
+    <div className="relative w-full min-h-screen -mt-14 md:-mt-20 overflow-hidden bg-oled pb-20">
       
-      {/* Cinematic Hero Section */}
-      <section className="relative min-h-[50vh] h-auto w-full flex items-end pb-12 pt-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-oled via-oled/80 to-transparent z-10" />
-        
-        {bestBackdrop && (
+      {/* Blurred Full-Screen Backdrop */}
+      {bestBackdrop && (
+        <div className="absolute inset-0 w-full h-[60vh] md:h-[80vh] pointer-events-none z-0">
           <Image
             src={posterUrl(bestBackdrop, "original") || ""}
             alt="Backdrop"
             fill
-            className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-30 scale-125 z-0"
+            className="object-cover blur-[100px] opacity-30 scale-125"
             priority
           />
-        )}
+          <div className="absolute inset-0 bg-gradient-to-t from-oled via-oled/60 to-transparent" />
+        </div>
+      )}
 
-        <div className="relative z-20 w-full max-w-7xl mx-auto px-6 sm:px-8 md:px-12 lg:px-16 flex flex-col md:flex-row gap-8 items-start">
-          {/* Profile Image */}
-          <div className="sticky top-32 w-40 sm:w-56 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 shadow-cinematic self-start">
-            {person.profile_path ? (
-              <Image
-                src={posterUrl(person.profile_path, "h632")!}
-                alt={person.name}
-                width={224}
-                height={336}
-                className="w-full h-auto object-cover"
-                priority
-              />
-            ) : (
-              <div className="w-full aspect-[2/3] bg-navy flex items-center justify-center text-silver-dark text-sm">
-                No Image
+      {/* Main Content */}
+      <div className="relative z-10 pt-20 md:pt-32">
+        <BackButton />
+        
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 lg:px-16 flex flex-col md:flex-row gap-6 md:gap-8 items-start mt-6 md:mt-8">
+          
+          {/* Profile Image & Mobile Name Row */}
+          <div className="flex flex-row gap-4 md:block items-end md:items-start w-full md:w-auto">
+            {/* Profile Image */}
+            <div className="w-32 sm:w-40 md:w-56 aspect-[2/3] md:h-auto md:sticky md:top-32 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 shadow-cinematic z-20 relative bg-navy">
+              {person.profile_path ? (
+                <Image
+                  src={posterUrl(person.profile_path, "h632")!}
+                  alt={person.name}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-silver-dark text-xs">
+                  No Image
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Name (Hidden on Desktop) */}
+            <div className="flex-1 animate-fade-up md:hidden pb-1">
+              <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
+                {person.name}
+              </h1>
+              <div className="text-sm font-medium text-silver-light">
+                {person.known_for_department}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Info */}
-          <div className="flex-1 animate-fade-up pb-2">
-            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl mb-4">
+          {/* Info Container */}
+          <div className="flex-1 animate-fade-up w-full">
+            {/* Desktop Name (Hidden on Mobile) */}
+            <h1 className="hidden md:block text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl mb-4">
               {person.name}
             </h1>
             
-            <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-silver-light mb-6 border-b border-white/10 pb-6">
+            <div className="flex flex-wrap items-center gap-4 md:gap-6 text-xs md:text-sm font-medium text-silver-light mb-6 border-b border-white/10 pb-4 md:pb-6">
               {person.birthday && (
                 <div>
                   <span className="text-silver-dark block text-xs uppercase tracking-wider mb-1">Born</span>
@@ -141,7 +158,7 @@ export default function PersonClient({ person }: { person: TMDBPersonDetails }) 
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Dual Filter Section */}
       <div className="mx-auto w-full max-w-7xl px-6 sm:px-8 md:px-12 lg:px-16 mt-8 mb-6">
