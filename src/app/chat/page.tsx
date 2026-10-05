@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
-import { Send, Users, MessageSquare, Crown, ShieldCheck, Loader2 } from "lucide-react";
+import { Send, Users, MessageSquare, Crown, ShieldCheck, Loader2, ChevronDown, Search } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 
 type Profile = {
@@ -37,6 +37,8 @@ export default function ChatPage() {
   const [directMessages, setDirectMessages] = useState<UnifiedMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -203,12 +205,15 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="flex flex-col w-full h-screen bg-[#0B0C10] pt-16 md:pt-28 pb-20 md:pb-6 px-2 md:px-4 max-w-5xl mx-auto overflow-hidden animate-fade-up">
+    <div className="flex flex-col w-full h-[calc(100vh-120px)] md:h-[calc(100vh-96px)] bg-[#0B0C10] px-2 md:px-4 max-w-5xl mx-auto overflow-hidden animate-fade-up pt-4 pb-4">
       
       {/* Top Tabs */}
-      <div className="flex justify-center gap-2 md:gap-4 mb-4 md:mb-6 shrink-0">
+      <div className="flex justify-center gap-2 md:gap-4 mb-4 shrink-0">
         <button
-          onClick={() => setActiveMainTab("global")}
+          onClick={() => {
+            setActiveMainTab("global");
+            setIsUserMenuOpen(false);
+          }}
           className={`flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-base font-bold transition-all shadow-lg ${
             activeMainTab === "global" 
               ? "bg-[#D4AF37] text-[#0B0C10] ring-2 ring-[#D4AF37]/50" 
@@ -220,6 +225,7 @@ export default function ChatPage() {
         <button
           onClick={() => {
             setActiveMainTab("dm");
+            setIsUserMenuOpen(false);
             if (!activeAdminId && admins.length > 0) setActiveAdminId(admins[0].id);
           }}
           className={`flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-base font-bold transition-all shadow-lg ${
@@ -233,64 +239,93 @@ export default function ChatPage() {
       </div>
 
       {/* Main Chat Interface */}
-      <div className="flex flex-row flex-1 w-full h-full bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
+      <div className="flex flex-col flex-1 w-full bg-[#0B0C10]/50 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
         
-        {/* DM Sidebar (Only visible in Direct tab) */}
-        {activeMainTab === "dm" && (
-          <div className="w-20 md:w-80 flex-shrink-0 border-r border-white/10 bg-black/30 flex flex-col">
-            <div className="p-4 border-b border-white/10 flex items-center justify-center md:justify-start">
-              <h3 className="hidden md:block text-sm font-semibold text-[#D4AF37] uppercase tracking-wider">Direct Messages</h3>
-              <MessageSquare className="md:hidden text-[#D4AF37]" size={20} />
+        {/* Header (Unified for Global & DM) */}
+        <div className="h-14 md:h-16 border-b border-white/10 bg-black/40 flex items-center shrink-0 shadow-md z-20 relative">
+          {activeMainTab === "global" ? (
+            <div className="px-4 md:px-6 w-full h-full flex items-center">
+              <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+                <Users className="text-[#D4AF37] w-5 h-5 md:w-6 md:h-6" /> Global Public Chat
+              </h2>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
-              {admins.filter(a => a.id !== user?.id).map((admin) => (
-                <button
-                  key={admin.id}
-                  onClick={() => setActiveAdminId(admin.id)}
-                  className={`w-full flex items-center justify-center md:justify-start gap-3 md:px-3 py-3 rounded-xl transition-colors ${
-                    activeAdminId === admin.id ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5"
-                  }`}
-                >
-                  <div className="relative w-10 h-10 rounded-full shrink-0 border border-white/10 overflow-hidden">
-                    <UserAvatar src={admin.avatar_url} />
+          ) : (
+            <div className="w-full h-full flex flex-col relative">
+              <button 
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} 
+                className="w-full h-full flex justify-between items-center px-4 md:px-6 hover:bg-white/5 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="text-blue-400 w-5 h-5 md:w-6 md:h-6" />
+                  <div className="flex flex-col items-start">
+                    <h2 className="text-sm md:text-base font-bold text-white">
+                      {activeAdminId ? admins.find(a => a.id === activeAdminId)?.full_name || admins.find(a => a.id === activeAdminId)?.username : "Select User to Message"}
+                    </h2>
+                    {activeAdminId && (
+                       <span className="text-xs text-gray-400 capitalize flex items-center gap-1">
+                         {admins.find(a => a.id === activeAdminId)?.role}
+                         {renderBadge(admins.find(a => a.id === activeAdminId)?.role || "")}
+                       </span>
+                    )}
                   </div>
-                  <div className="hidden md:flex text-left flex-1 flex-col truncate">
-                    <div className="font-semibold text-sm flex items-center text-white">
-                      <span className="truncate">{admin.full_name || admin.username}</span>
-                      {renderBadge(admin.role)}
-                    </div>
-                    <div className="text-xs opacity-70 capitalize text-[#D4AF37]">{admin.role}</div>
+                </div>
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {isUserMenuOpen && (
+                <div className="absolute top-full left-0 w-full max-h-[50vh] bg-[#12141D] border-b border-white/10 shadow-2xl z-50 flex flex-col">
+                  <div className="p-3 border-b border-white/10 flex items-center gap-2 sticky top-0 bg-[#12141D] z-10">
+                    <Search className="w-4 h-4 text-gray-400" />
+                    <input 
+                      type="text" 
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)} 
+                      placeholder="Search users..."
+                      className="w-full bg-transparent border-none text-white text-sm outline-none placeholder:text-gray-500" 
+                      autoFocus 
+                    />
                   </div>
-                </button>
-              ))}
-              {admins.filter(a => a.id !== user?.id).length === 0 && (
-                <div className="text-center p-4 text-gray-500 text-sm">No users available for messaging.</div>
+                  <div className="overflow-y-auto flex-1 custom-scrollbar">
+                    {admins
+                      .filter(a => a.id !== user?.id)
+                      .filter(a => (a.full_name || a.username).toLowerCase().includes(userSearch.toLowerCase()))
+                      .map((admin) => (
+                        <button
+                          key={admin.id}
+                          onClick={() => {
+                            setActiveAdminId(admin.id);
+                            setIsUserMenuOpen(false);
+                            setUserSearch("");
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 border-b border-white/5 transition-colors ${
+                            activeAdminId === admin.id ? "bg-white/10" : "hover:bg-white/5"
+                          }`}
+                        >
+                          <div className="relative w-8 h-8 rounded-full shrink-0 border border-white/10 overflow-hidden">
+                            <UserAvatar src={admin.avatar_url} />
+                          </div>
+                          <div className="text-left flex-1 truncate flex flex-col">
+                            <div className="font-semibold text-sm flex items-center text-white">
+                              <span className="truncate">{admin.full_name || admin.username}</span>
+                              {renderBadge(admin.role)}
+                            </div>
+                            <div className="text-xs opacity-70 capitalize text-[#D4AF37]">{admin.role}</div>
+                          </div>
+                        </button>
+                      ))}
+                      {admins.filter(a => a.id !== user?.id && (a.full_name || a.username).toLowerCase().includes(userSearch.toLowerCase())).length === 0 && (
+                        <div className="p-4 text-center text-gray-500 text-sm">No users found.</div>
+                      )}
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Chat Window */}
-        <div className="flex-1 flex flex-col relative overflow-hidden bg-[#0B0C10]/50 backdrop-blur-sm w-full h-full">
-          {/* Header */}
-          <div className="h-14 md:h-16 border-b border-white/10 bg-black/40 flex items-center px-4 md:px-6 shrink-0 shadow-md z-10">
-            <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
-              {activeMainTab === "global" ? (
-                <>
-                  <Users className="text-[#D4AF37] w-5 h-5 md:w-6 md:h-6" /> Global Public Chat
-                </>
-              ) : activeAdminId ? (
-                <>
-                  <ShieldCheck className="text-blue-400 w-5 h-5 md:w-6 md:h-6" /> Private Support Thread
-                </>
-              ) : (
-                "Select a conversation"
-              )}
-            </h2>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 custom-scrollbar">
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 custom-scrollbar">
             {activeMainTab === "global" ? (
               globalMessages.length === 0 ? (
                 <div className="text-center text-gray-500 mt-10">Welcome to the Global Community! Be the first to say hello.</div>
