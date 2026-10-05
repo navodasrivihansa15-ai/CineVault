@@ -109,13 +109,12 @@ export default function SearchBar({ onResultClick }: SearchBarProps) {
   return (
     <div
       ref={wrapperRef}
-      className="relative z-50 w-full max-w-md transition-all duration-300"
+      className="relative z-50 w-full max-w-full md:max-w-md transition-all duration-300"
     >
       {/* Input Field */}
-      <form onSubmit={handleSearchSubmit} className="group relative flex items-center">
+      <form onSubmit={handleSearchSubmit} className="relative w-full max-w-full md:max-w-md h-10 md:h-12">
         <Search
-          size={20}
-          className="absolute left-4 text-silver-dark transition-colors group-focus-within:text-[#D4AF37]"
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-white/50 transition-colors group-focus-within:text-[#D4AF37]"
         />
         <input
           type="text"
@@ -125,18 +124,12 @@ export default function SearchBar({ onResultClick }: SearchBarProps) {
             if (results.length > 0) setIsOpen(true);
           }}
           placeholder="Search movies, TV shows..."
-          className="
-            w-full rounded-2xl border border-white/10
-            bg-[#0B0C10]/40 backdrop-blur-md py-3 pl-12 pr-10
-            text-lg text-white placeholder-gray-500
-            outline-none transition-all duration-300
-            focus:border-[#D4AF37]/50 focus:bg-[#0B0C10]/80 focus:shadow-[0_0_15px_rgba(212,175,55,0.15)]
-          "
+          className="w-full h-full bg-white/5 border border-white/10 rounded-full pl-10 md:pl-12 pr-10 md:pr-12 text-sm md:text-base text-white focus:outline-none focus:border-[#D4AF37] focus:bg-[#0B0C10]/80 focus:shadow-[0_0_15px_rgba(212,175,55,0.15)] transition-all duration-300 placeholder:text-gray-500"
         />
         {/* Loading Spinner or Clear Button */}
-        <div className="absolute right-4 flex items-center justify-center">
+        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
           {loading ? (
-            <Loader2 size={18} className="animate-spin text-[#D4AF37]" />
+            <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin text-[#D4AF37]" />
           ) : query ? (
             <button
               type="button"
@@ -144,7 +137,7 @@ export default function SearchBar({ onResultClick }: SearchBarProps) {
               className="text-gray-500 hover:text-white transition-colors"
               aria-label="Clear search"
             >
-              <X size={18} />
+              <X className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           ) : null}
         </div>

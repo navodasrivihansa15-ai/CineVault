@@ -38,7 +38,7 @@ export default function ChatPage() {
   const [globalMessages, setGlobalMessages] = useState<UnifiedMessage[]>([]);
   const [directMessages, setDirectMessages] = useState<UnifiedMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -92,7 +92,7 @@ export default function ChatPage() {
     if (isAuthLoading || !user) return;
 
     const fetchData = async () => {
-      setLoading(true);
+      setIsLoadingMessages(true);
       // 1. Fetch current user's profile to determine role
       const { data: myProfile } = await supabase
         .from("profiles")
@@ -121,11 +121,11 @@ export default function ChatPage() {
           profiles:user_id (id, username, full_name, avatar_url, role)
         `)
         .eq("is_private", false)
-        .order("created_at", { ascending: true })
-        .limit(100);
+        .order("created_at", { ascending: false })
+        .limit(50);
       
-      if (globalMsgs) setGlobalMessages(globalMsgs as any);
-      setLoading(false);
+      if (globalMsgs) setGlobalMessages(globalMsgs.reverse() as any);
+      setIsLoadingMessages(false);
       scrollToBottom();
     };
 
@@ -191,6 +191,7 @@ export default function ChatPage() {
     if (isAuthLoading || !user || !activeAdminId || activeMainTab !== "dm") return;
 
     const fetchDMs = async () => {
+      setIsLoadingMessages(true);
       const { data } = await supabase
         .from("messages")
         .select(`
@@ -199,10 +200,12 @@ export default function ChatPage() {
         `)
         .eq("is_private", true)
         .or(`and(user_id.eq.${user.id},recipient_id.eq.${activeAdminId}),and(user_id.eq.${activeAdminId},recipient_id.eq.${user.id})`)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(50);
         
-      if (data) setDirectMessages(data as any);
+      if (data) setDirectMessages(data.reverse() as any);
       scrollToBottom();
+      setIsLoadingMessages(false);
     };
 
     fetchDMs();
@@ -391,14 +394,6 @@ export default function ChatPage() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#0B0C10]">
-        <Loader2 className="animate-spin text-[#D4AF37]" size={48} />
-      </div>
-    );
-  }
-
   // Filter direct messages for the currently selected admin conversation to avoid cross-talk if a payload arrives
   const currentDirectMessages = directMessages.filter(msg => 
     (msg.user_id === user?.id && msg.recipient_id === activeAdminId) ||
@@ -541,7 +536,19 @@ export default function ChatPage() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 custom-scrollbar">
-            {activeMainTab === "global" ? (
+            {isLoadingMessages ? (
+              <div className="flex flex-col gap-6 animate-pulse p-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className={`flex items-end gap-3 ${i % 2 === 0 ? "self-end flex-row-reverse" : "self-start"}`}>
+                    <div className="w-8 h-8 rounded-full bg-white/5 shrink-0" />
+                    <div className="flex flex-col gap-1">
+                      <div className={`h-3 w-16 bg-white/5 rounded ${i % 2 === 0 ? "ml-auto" : ""}`} />
+                      <div className={`h-12 w-48 sm:w-64 bg-white/10 rounded-2xl ${i % 2 === 0 ? "rounded-br-sm" : "rounded-bl-sm"}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : activeMainTab === "global" ? (
               globalMessages.length === 0 ? (
                 <div className="text-center text-gray-500 mt-10">Welcome to the Global Community! Be the first to say hello.</div>
               ) : (

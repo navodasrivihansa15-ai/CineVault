@@ -84,15 +84,17 @@ export default async function SearchPage({
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between border-b border-white/10 pb-4 gap-4">
-          <div className="flex items-center gap-3">
-            <Search size={28} className="text-[#D4AF37]" />
-            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Search Results for <span className="text-[#D4AF37]">"{query}"</span>
-            </h1>
-          </div>
-          <div className="text-sm font-medium text-[#D4AF37] bg-[#D4AF37]/10 px-4 py-1.5 rounded-full border border-[#D4AF37]/20 shadow-[0_0_10px_rgba(212,175,55,0.1)] shrink-0 self-start md:self-auto">
-            Page {page} of {totalPages}
+        <div className="mb-4 md:mb-8 flex flex-col md:flex-row md:items-center justify-between border-b border-white/10 pb-4 gap-2 md:gap-4">
+          <div className="flex items-start md:items-center gap-2 md:gap-3">
+            <Search className="w-6 h-6 md:w-7 md:h-7 text-[#D4AF37] mt-1 md:mt-0 shrink-0" />
+            <div className="flex flex-col">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1 md:mb-2 leading-tight">
+                Search Results for <span className="text-[#D4AF37]">"{query}"</span>
+              </h1>
+              <div className="text-xs md:text-sm text-white/60">
+                Page {page} of {totalPages}
+              </div>
+            </div>
           </div>
         </div>
 
