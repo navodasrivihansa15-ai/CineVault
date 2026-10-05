@@ -46,27 +46,26 @@ export default async function TVDetailsPage({
   return (
     <div className="flex flex-col min-h-screen bg-oled pb-20">
       <BackButton />
-      {/* Parallax Header */}
-      <section className="relative h-[40vh] md:h-[50vh] min-h-[300px] md:min-h-[400px] w-full overflow-hidden">
-        <div className="absolute inset-0 fixed-bg pointer-events-none">
+      {/* Background Image Wrapper - Full Bleed */}
+      <div className="absolute inset-0 top-0 w-full h-[70vh] md:h-screen overflow-hidden bg-black pointer-events-none">
+        <div className="absolute inset-0">
           {tv.backdrop_path ? (
             <Image
               src={backdropUrl(tv.backdrop_path, "original")!}
               alt={tv.name}
               fill
               priority
-              className="object-cover object-top opacity-50"
-              style={{ objectPosition: "50% 20%" }}
+              className="w-full h-full object-cover object-top opacity-50"
             />
           ) : (
             <div className="h-full w-full bg-navy-light opacity-50" />
           )}
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-oled/50 to-transparent" />
-      </section>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-[#0B0C10]/80 to-transparent pointer-events-none" />
+      </div>
 
-      {/* Content Section Overlay */}
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-8 md:px-12 lg:px-16 relative z-10 -mt-16 md:-mt-48">
+      {/* Main Content Container - Shifted UP on Mobile */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 lg:px-16 pt-24 md:pt-[30vh] lg:pt-[35vh] pb-10">
         <div className="flex flex-col md:flex-row gap-4 md:gap-8">
           
           {/* Mobile Top Row: Poster + Title/Meta */}
