@@ -41,6 +41,17 @@ export default function ChatPage() {
   const [userSearch, setUserSearch] = useState("");
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Prevent scroll jumping on focus
+  useEffect(() => {
+    if (isUserMenuOpen) {
+      setTimeout(() => searchInputRef.current?.focus({ preventScroll: true }), 50);
+    } else if (activeMainTab === "global" || (activeMainTab === "dm" && activeAdminId)) {
+      setTimeout(() => messageInputRef.current?.focus({ preventScroll: true }), 50);
+    }
+  }, [activeMainTab, isUserMenuOpen, activeAdminId]);
 
   // Authentication Guard
   useEffect(() => {
@@ -205,7 +216,8 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="flex flex-col w-full h-[calc(100vh-120px)] md:h-[calc(100vh-96px)] bg-[#0B0C10] px-2 md:px-4 max-w-5xl mx-auto overflow-hidden animate-fade-up pt-4 pb-4">
+    <div className="fixed inset-0 z-0 flex flex-col pt-14 md:pt-24 pb-16 md:pb-0 bg-[#0B0C10] overflow-hidden">
+      <div className="flex flex-col w-full h-full max-w-5xl mx-auto px-2 md:px-4 animate-fade-up pt-4 pb-4">
       
       {/* Top Tabs */}
       <div className="flex justify-center gap-2 md:gap-4 mb-4 shrink-0">
@@ -278,12 +290,12 @@ export default function ChatPage() {
                   <div className="p-3 border-b border-white/10 flex items-center gap-2 sticky top-0 bg-[#12141D] z-10">
                     <Search className="w-4 h-4 text-gray-400" />
                     <input 
+                      ref={searchInputRef}
                       type="text" 
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)} 
                       placeholder="Search users..."
                       className="w-full bg-transparent border-none text-white text-sm outline-none placeholder:text-gray-500" 
-                      autoFocus 
                     />
                   </div>
                   <div className="overflow-y-auto flex-1 custom-scrollbar">
@@ -398,6 +410,7 @@ export default function ChatPage() {
             <div className="p-3 md:p-4 border-t border-white/10 bg-[#0B0C10] flex-shrink-0 w-full z-10">
               <form onSubmit={handleSendMessage} className="flex items-end gap-2 md:gap-3 max-w-4xl mx-auto">
                 <textarea
+                  ref={messageInputRef}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder={activeMainTab === "global" ? "Message the community..." : "Send a secure direct message..."}
@@ -419,6 +432,7 @@ export default function ChatPage() {
               </form>
             </div>
           )}
+      </div>
       </div>
     </div>
   );
