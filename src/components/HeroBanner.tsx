@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Star, Play, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, Play, Plus, ChevronLeft, ChevronRight, Crown } from "lucide-react";
 import { backdropUrl } from "@/lib/tmdb";
 import type { TMDBMovie, TMDBGenre } from "@/lib/tmdb";
 
@@ -111,7 +111,7 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
 
   return (
     <section 
-      className="relative w-full h-[450px] md:h-[85vh] md:min-h-[600px] md:max-h-[900px] overflow-hidden mt-0 md:-mt-24 z-0 rounded-none"
+      className="relative w-full h-[450px] md:h-[85vh] md:min-h-[600px] md:max-h-[900px] overflow-hidden mt-0 md:-mt-24 z-0 rounded-none mx-0"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -129,42 +129,46 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
             fill
             priority
             sizes="100vw"
-            className="object-cover object-top"
+            className="object-cover object-center md:object-top"
           />
         ) : (
           <div className="h-full w-full bg-[#0B0C10]" />
         )}
       </div>
 
-      {/* Gradient Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-[#0B0C10]/60 to-transparent -z-10" />
-      <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#0B0C10]/80 via-transparent to-transparent -z-10" />
-      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#0B0C10] to-transparent -z-10" />
-
-      {/* Overlay Badges (Top Left & Top Right) */}
-      <div className="absolute top-4 left-4 right-4 md:top-32 md:left-12 md:right-12 flex justify-between items-start z-20 pointer-events-none">
-        {/* Top-Left: Featured Cinema */}
-        <span className="bg-[#D4AF37] text-black font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider shadow-lg">
-          Featured Cinema
-        </span>
+      {/* ── Mobile Badges (Top Left & Top Right) ── */}
+      <div className={`absolute top-4 left-4 right-4 flex justify-between items-start z-20 md:hidden transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
+        {/* Featured Cinema Badge */}
+        <div className="flex items-center gap-1.5 rounded-md bg-black/40 backdrop-blur-md border border-white/10 px-2.5 py-1.5 shadow-xl">
+          <Crown size={12} className="text-gold" />
+          <span className="text-[9px] font-bold text-white tracking-widest uppercase">FEATURED CINEMA</span>
+        </div>
         
-        {/* Top-Right: Rating Badge */}
-        <div className="bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 border border-white/10 shadow-lg">
-          <Star size={14} className="fill-[#D4AF37] text-[#D4AF37]" />
-          <span>{movie.vote_average.toFixed(1)}</span>
+        {/* Rating Badge */}
+        <div className="flex items-center gap-1.5 rounded-md bg-black/40 backdrop-blur-md border border-gold/20 px-2.5 py-1.5 shadow-xl">
+          <Star size={12} className="fill-gold text-gold" />
+          <span className="text-[11px] font-bold text-gold">
+            {movie.vote_average.toFixed(1)}
+          </span>
         </div>
       </div>
+
+      {/* Gradient Overlays */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-[#0B0C10]/80 md:via-[#0B0C10]/40 to-transparent -z-10" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#0B0C10]/80 via-transparent to-transparent -z-10 hidden md:block" />
+      {/* Bottom fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-48 md:h-64 bg-gradient-to-t from-[#0B0C10] to-transparent -z-10" />
 
       {/* Content */}
       <div
         className={`
-          absolute bottom-0 left-0 right-0 px-4 pb-12 pt-28 md:pb-20 md:pt-32 sm:px-8 md:px-12 lg:px-16
+          absolute bottom-0 left-0 right-0 px-4 pb-12 pt-20 md:px-6 md:pb-20 md:pt-32 sm:px-8 md:px-12 lg:px-16
           transition-all duration-500 z-10
           ${isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}
         `}
       >
-        <div className="mx-auto w-full max-w-7xl">
-          {/* Genres (Hidden on Mobile) */}
+        <div className="mx-auto max-w-7xl">
+          {/* Genres (Desktop Only) */}
           <div className="hidden md:flex mb-3 flex-wrap items-center gap-2">
             {genreNames.map((name) => (
               <span
@@ -180,36 +184,44 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl md:text-5xl lg:text-6xl font-bold text-white mb-2">
+          <h1 className="mb-2 md:mb-3 max-w-2xl text-2xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-lg">
             {movie.title}
           </h1>
 
           {/* Overview */}
-          <p className="text-gray-300 text-sm line-clamp-2 mb-5 max-w-xl md:text-base md:line-clamp-3">
+          <p className="mb-4 md:mb-5 max-w-xl text-xs md:text-sm leading-relaxed text-silver/90 sm:text-base line-clamp-2 md:line-clamp-3 drop-shadow-md">
             {movie.overview}
           </p>
 
-          {/* Buttons */}
-          <div className="flex flex-wrap items-center gap-3 md:gap-4">
+          {/* Rating + Buttons */}
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
+            {/* Rating (Desktop Only) */}
+            <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-gold/20 bg-gold/[0.08] px-3 py-1.5">
+              <Star size={16} className="fill-gold text-gold" />
+              <span className="text-sm font-bold text-gold">
+                {movie.vote_average.toFixed(1)}
+              </span>
+            </div>
+
             {/* Watch Now */}
-            <Link href={`/${(movie as any).media_type || 'movie'}/${movie.id}`} className="btn-gold group flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm md:text-base">
+            <Link href={`/${(movie as any).media_type || 'movie'}/${movie.id}`} className="btn-gold group flex items-center justify-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-full font-bold text-xs md:text-sm">
               <Play
-                size={18}
+                size={16}
                 className="transition-transform duration-200 group-hover:scale-110"
               />
               Watch Now
             </Link>
 
             {/* Add to Vault */}
-            <button className="btn-ghost group flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm md:text-base">
-              <Plus size={18} />
-              <span className="hidden sm:inline">Vault</span>
+            <button className="btn-ghost group flex items-center justify-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-full font-bold text-xs md:text-sm">
+              <Plus size={16} />
+              <span className="inline">Vault</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Navigation Arrows */}
+      {/* Navigation Arrows (Desktop Only) */}
       <button
         onClick={(e) => {
           e.preventDefault();
@@ -257,8 +269,8 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
               h-1.5 rounded-full transition-all duration-500
               ${
                 i === currentIndex
-                  ? "w-8 bg-[#D4AF37] shadow-gold-sm"
-                  : "w-1.5 bg-gray-500/40 hover:bg-gray-500/60"
+                  ? "w-8 bg-gold shadow-gold-sm"
+                  : "w-1.5 bg-silver-dark/40 hover:bg-silver-dark/60"
               }
             `}
             aria-label={`Go to slide ${i + 1}`}
@@ -268,3 +280,4 @@ export default function HeroBanner({ movies, genres }: HeroBannerProps) {
     </section>
   );
 }
+
