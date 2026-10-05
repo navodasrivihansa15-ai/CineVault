@@ -63,7 +63,7 @@ export default async function TVDetailsPage({
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-oled via-oled/80 to-transparent" />
         
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-12 sm:px-8 md:px-12 lg:px-16 max-w-7xl mx-auto flex flex-col md:flex-row gap-8 items-end">
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-8 md:pb-12 sm:px-8 md:px-12 lg:px-16 max-w-7xl mx-auto flex flex-col md:flex-row gap-4 md:gap-8 items-end">
           {/* Poster */}
           <div className="hidden md:block w-48 lg:w-64 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 shadow-cinematic">
             {tv.poster_path ? (
@@ -81,29 +81,29 @@ export default async function TVDetailsPage({
 
           {/* Info */}
           <div className="flex-1 animate-fade-up">
-            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl mb-4">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-2 md:mb-4">
               {tv.name}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-silver-light mb-6">
-              <div className="flex items-center gap-1.5 rounded-lg border border-gold/20 bg-gold/[0.08] px-2.5 py-1">
-                <Star size={16} className="fill-gold text-gold" />
+            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm font-medium text-silver-light mb-4 md:mb-6">
+              <div className="flex items-center gap-1 md:gap-1.5 rounded-lg border border-gold/20 bg-gold/[0.08] px-2 md:px-2.5 py-0.5 md:py-1">
+                <Star className="w-3 h-3 md:w-4 md:h-4 fill-gold text-gold" />
                 <span className="text-gold">{tv.vote_average.toFixed(1)}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-silver-dark">
-                <Calendar size={16} />
+              <div className="flex items-center gap-1 md:gap-1.5 text-silver-dark">
+                <Calendar className="w-3 h-3 md:w-4 md:h-4" />
                 <span>{tv.first_air_date}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-silver-dark">
-                <TvIcon size={16} />
+              <div className="flex items-center gap-1 md:gap-1.5 text-silver-dark">
+                <TvIcon className="w-3 h-3 md:w-4 md:h-4" />
                 <span>{tv.number_of_seasons} Seasons</span>
               </div>
-              <div className="flex items-center gap-1.5 text-silver-dark px-2 py-0.5 rounded border border-white/10">
+              <div className="flex items-center gap-1 md:gap-1.5 text-silver-dark px-1 md:px-2 py-0.5 rounded border border-white/10 text-[10px] md:text-xs">
                 <span>{tv.status}</span>
               </div>
             </div>
 
-            <p className="max-w-3xl text-base leading-relaxed text-silver mb-6">
+            <p className="max-w-3xl text-xs md:text-base leading-relaxed text-silver mb-4 md:mb-6 line-clamp-3 md:line-clamp-none">
               {tv.overview}
             </p>
 
@@ -153,7 +153,7 @@ export default async function TVDetailsPage({
         </div>
       </section>
 
-      <div className="mx-auto w-full max-w-7xl px-6 sm:px-8 md:px-12 lg:px-16 space-y-16 mt-8">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-8 md:px-12 lg:px-16 space-y-8 md:space-y-16 mt-4 md:mt-8">
         
         {/* Trailers Section */}
         <TrailerSection videos={videos} />
@@ -172,11 +172,11 @@ export default async function TVDetailsPage({
         {/* Cast Section */}
         {cast.length > 0 && (
           <section>
-            <h2 className="section-heading mb-6">Top Cast</h2>
-            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
+            <h2 className="section-heading mb-4 md:mb-6">Top Cast</h2>
+            <div className="flex gap-2 md:gap-4 overflow-x-auto scrollbar-hide pb-4">
               {cast.map((actor: any) => (
-                <Link key={actor.id} href={`/person/${actor.id}`} className="w-32 flex-shrink-0 block group cursor-pointer">
-                  <div className="aspect-[2/3] w-full overflow-hidden rounded-xl border border-white/5 bg-navy-light mb-3 relative transition-all duration-300 group-hover:border-gold/30 group-hover:shadow-gold-sm">
+                <Link key={actor.id} href={`/person/${actor.id}`} className="w-20 md:w-32 flex-shrink-0 block group cursor-pointer">
+                  <div className="aspect-[2/3] w-full overflow-hidden rounded-xl border border-white/5 bg-navy-light mb-2 md:mb-3 relative transition-all duration-300 group-hover:border-gold/30 group-hover:shadow-gold-sm">
                     {actor.profile_path ? (
                       <Image
                         src={posterUrl(actor.profile_path, "w185")!}
@@ -185,11 +185,11 @@ export default async function TVDetailsPage({
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-silver-dark group-hover:text-gold transition-colors">No Image</div>
+                      <div className="flex h-full items-center justify-center text-[10px] md:text-xs text-silver-dark group-hover:text-gold transition-colors">No Image</div>
                     )}
                   </div>
-                  <p className="text-sm font-medium text-silver-light truncate group-hover:text-gold transition-colors">{actor.name}</p>
-                  <p className="text-xs text-silver-dark truncate">{actor.character}</p>
+                  <p className="text-[10px] md:text-sm font-medium text-silver-light truncate group-hover:text-gold transition-colors">{actor.name}</p>
+                  <p className="text-[10px] md:text-xs text-silver-dark truncate">{actor.character}</p>
                 </Link>
               ))}
             </div>

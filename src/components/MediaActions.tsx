@@ -88,28 +88,28 @@ export default function MediaActions({
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-2 md:gap-4">
         <button
           onClick={() => setStreamOpen(true)}
-          className="btn-gold group"
+          className="btn-gold group px-4 py-2 md:px-6 md:py-3 text-sm md:text-base"
         >
-          <Play size={18} className="transition-transform duration-200 group-hover:scale-110 fill-oled" />
+          <Play className="w-4 h-4 md:w-5 md:h-5 transition-transform duration-200 group-hover:scale-110 fill-oled" />
           Stream / Play
         </button>
 
         <button
           onClick={handleWishlist}
-          className={`btn-ghost group ${inWishlist ? "text-gold border-gold/40" : ""}`}
+          className={`btn-ghost group px-4 py-2 md:px-6 md:py-3 text-sm md:text-base ${inWishlist ? "text-gold border-gold/40" : ""}`}
         >
-          {inWishlist ? <Check size={18} /> : <Heart size={18} />}
+          {inWishlist ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <Heart className="w-4 h-4 md:w-5 md:h-5" />}
           {inWishlist ? "In Wishlist" : "Wishlist"}
         </button>
 
         <button
           onClick={handleVault}
-          className={`btn-ghost group ${inVault ? "text-gold border-gold/40" : ""}`}
+          className={`btn-ghost group px-4 py-2 md:px-6 md:py-3 text-sm md:text-base ${inVault ? "text-gold border-gold/40" : ""}`}
         >
-          {inVault ? <Check size={18} /> : <Archive size={18} />}
+          {inVault ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <Archive className="w-4 h-4 md:w-5 md:h-5" />}
           {inVault ? "In Vault" : "Log to Vault"}
         </button>
       </div>

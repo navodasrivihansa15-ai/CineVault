@@ -123,7 +123,7 @@ export default function MediaCarousel({
 
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
+          className="flex gap-2 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
         >
           {items.map((item, idx) => (
             <MediaCard

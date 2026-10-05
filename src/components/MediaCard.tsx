@@ -107,7 +107,7 @@ export default function MediaCard({
       className={`
         group relative flex-shrink-0
         cursor-pointer
-        ${className || "w-[160px] sm:w-[180px] md:w-[200px]"}
+        ${className || "w-[140px] sm:w-[160px] md:w-[200px]"}
       `}
     >
       {toast && (
@@ -178,7 +178,7 @@ export default function MediaCard({
 
       {/* Title below poster */}
       <div className="mt-2.5 px-0.5">
-        <p className="text-sm md:text-base font-medium text-silver-light line-clamp-1 transition-colors group-hover:text-gold">
+        <p className="text-xs md:text-base font-medium text-silver-light line-clamp-1 transition-colors group-hover:text-gold">
           {title}
         </p>
         <p className="text-2xs text-silver-dark mt-0.5">
