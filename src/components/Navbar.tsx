@@ -560,7 +560,6 @@ function NavbarContent() {
                     }
                   }}
                   className="hidden md:block text-gray-400 hover:text-[#D4AF37] transition-colors p-2"
-
                   title="Log Out"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
@@ -569,7 +568,7 @@ function NavbarContent() {
             ) : (
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="hidden md:block text-gray-400 hover:text-[#D4AF37] transition-colors p-1"
+                className="text-gray-400 hover:text-[#D4AF37] transition-colors p-1"
                 title="Log In"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-log-out -rotate-90 transition-transform duration-300"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>

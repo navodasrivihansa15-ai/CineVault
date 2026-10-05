@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { User, Heart, Archive, Trash2, Clapperboard, Star, Check, Camera, Loader2, Save, ShieldAlert, Crown, ShieldCheck } from "lucide-react";
+import { User, Heart, Archive, Trash2, Clapperboard, Star, Check, Camera, Loader2, Save, ShieldAlert, Crown, ShieldCheck, LogOut } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { db, type WatchlistEntity, type WatchedMovieEntity } from "@/lib/db";
@@ -12,7 +12,7 @@ import UserAvatar from "@/components/UserAvatar";
 import AdminDashboard from "@/components/AdminDashboard";
 
 export default function ProfilePage() {
-  const { user, session } = useAuth();
+  const { user, session, signOut } = useAuth();
   
   const [activeTab, setActiveTab] = useState<string>("settings");
   
@@ -358,11 +358,23 @@ export default function ProfilePage() {
                     )}
                   </div>
                   
-                  <div className="pt-4 border-t border-white/5 flex justify-end">
+                  <div className="pt-4 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to log out?")) {
+                          signOut();
+                        }
+                      }}
+                      className="w-full md:w-auto flex items-center justify-center gap-2 rounded-xl bg-red-500/10 text-red-500 px-8 py-3 text-sm font-bold transition-all hover:bg-red-500/20 border border-red-500/20"
+                    >
+                      <LogOut size={18} />
+                      Log Out
+                    </button>
                     <button
                       type="submit"
                       disabled={savingProfile}
-                      className="flex items-center gap-2 rounded-xl bg-gold-shimmer px-8 py-3 text-sm font-bold text-black transition-all hover:brightness-110 disabled:opacity-70 disabled:cursor-not-allowed shadow-gold-md"
+                      className="w-full md:w-auto flex items-center justify-center gap-2 rounded-xl bg-gold-shimmer px-8 py-3 text-sm font-bold text-black transition-all hover:brightness-110 disabled:opacity-70 disabled:cursor-not-allowed shadow-gold-md"
                     >
                       {savingProfile ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                       Save Profile
