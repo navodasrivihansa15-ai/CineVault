@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, Play, Shield, Loader2, Save, Check, ListVideo, SkipForward, Trash2, Plus, Pencil } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
@@ -137,6 +138,11 @@ export default function CineVaultPlayerModal({
   const backdropRef = useRef<HTMLDivElement>(null);
   
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -521,8 +527,8 @@ export default function CineVaultPlayerModal({
           ) : (
             <>
               {/* Admin Edit UI */}
-              {isAdmin && editMode ? (
-                <div className="p-8">
+              {isAdmin && editMode ? (() => {
+                const adminUI = (
                   <div className="rounded-2xl border border-gold/30 bg-gold/5 p-8 backdrop-blur-md shadow-inner">
                     <h3 className="text-xl font-bold text-gold flex items-center gap-2 mb-2">
                       <Shield size={22} /> Configure Premium Source
@@ -677,8 +683,39 @@ export default function CineVaultPlayerModal({
                       )}
                     </form>
                   </div>
-                </div>
-              ) : streamUrl ? (
+                );
+
+                return (
+                  <>
+                    <style>{`
+                      @media (max-width: 768px) {
+                        .mobile-admin-backdrop {
+                          position: fixed; inset: 0; z-index: 99998; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+                        }
+                        .mobile-admin-popup {
+                          position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                          z-index: 99999;
+                          width: 92%; max-width: 400px; overflow-y: auto; max-height: 90vh;
+                        }
+                      }
+                    `}</style>
+                    {/* Desktop version */}
+                    <div className="p-8 hidden md:block">
+                      {adminUI}
+                    </div>
+                    {/* Mobile version */}
+                    {mounted && createPortal(
+                      <div className="md:hidden">
+                        <div className="mobile-admin-backdrop" onClick={() => setEditMode(false)} />
+                        <div className="mobile-admin-popup">
+                          {adminUI}
+                        </div>
+                      </div>,
+                      document.body
+                    )}
+                  </>
+                );
+              })() : streamUrl ? (
                 /* The Player */
                 <div className="relative aspect-video w-full bg-black group/player overflow-hidden">
                   <iframe

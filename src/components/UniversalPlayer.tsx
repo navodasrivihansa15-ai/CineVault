@@ -74,7 +74,7 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
         />
       ) : 
 
-      /* ── Google Drive Embed ──────────────────────── */}
+      /* ── Google Drive Embed ──────────────────────── */
       activeType === "gdrive" ? (
         <div className="h-full w-full relative">
           <iframe
