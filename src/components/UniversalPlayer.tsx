@@ -4,13 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import ReactPlayer from "react-player";
 import { Maximize, Play, Pause, Volume2, VolumeX, AlertCircle } from "lucide-react";
 
-export type PlayerType = "hls" | "youtube" | "iframe";
+export type PlayerType = "hls" | "youtube" | "iframe" | "gdrive" | "direct" | string;
 
 const Player = ReactPlayer as any;
 
 interface UniversalPlayerProps {
   url: string;
-  type: PlayerType;
+  type?: PlayerType;
   title: string;
 }
 
@@ -24,7 +24,20 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
 
-  // Auto-detect YouTube ID if the URL is standard YouTube but type is set to iframe or youtube
+  // Dynamic URL Detection Logic
+  const getSourceType = (link: string) => {
+    if (!link) return 'direct';
+    if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube';
+    if (link.includes('drive.google.com')) return 'gdrive';
+    if (link.includes('.workers.dev/watch')) return 'iframe';
+    return 'direct';
+  };
+
+  const detectedType = getSourceType(url);
+  // Use explicit type if provided and not just "iframe" (which we used previously for generic sandbox), otherwise use detected
+  const activeType = (type && type !== "iframe" && type !== "hls") ? type : detectedType;
+
+  // Auto-detect YouTube ID
   const getYouTubeId = (link: string) => {
     const match = link.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
     return match ? match[1] : null;
@@ -39,7 +52,12 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
     }
   };
 
-  const ytId = type === "youtube" ? getYouTubeId(url) : null;
+  const ytId = activeType === "youtube" ? getYouTubeId(url) : null;
+  
+  // Format Google Drive URL
+  const getGDriveUrl = (link: string) => {
+    return link.replace(/\/view.*$/, "/preview");
+  };
 
   return (
     <div 
@@ -47,7 +65,7 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
       className="relative flex h-full w-full items-center justify-center bg-black group overflow-hidden rounded-2xl border border-white/5 shadow-cinematic"
     >
       {/* ── YouTube Embed ────────────────────────────── */}
-      {type === "youtube" && ytId ? (
+      {activeType === "youtube" && ytId ? (
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&color=white`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -56,8 +74,26 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
         />
       ) : 
 
-      /* ── Secure Sandboxed Iframe ─────────────────── */
-      type === "iframe" ? (
+      /* ── Google Drive Embed ──────────────────────── */}
+      activeType === "gdrive" ? (
+        <div className="h-full w-full relative">
+          <iframe
+            src={getGDriveUrl(url)}
+            allowFullScreen
+            className="h-full w-full border-0 bg-black"
+            onLoad={() => setLoaded(true)}
+            onError={() => setError(true)}
+          />
+          {!loaded && !error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black text-silver-dark animate-pulse">
+              Loading Drive Stream...
+            </div>
+          )}
+        </div>
+      ) :
+
+      /* ── Secure Sandboxed Iframe (Legacy/Fallback) ── */
+      activeType === "iframe" ? (
         <div className="h-full w-full relative">
           <div className="absolute top-4 left-4 z-10 flex items-center gap-2 rounded-lg bg-black/60 px-3 py-1.5 text-xs text-silver backdrop-blur-md">
             <AlertCircle size={14} className="text-gold" />
@@ -80,8 +116,8 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
         </div>
       ) : 
 
-      /* ── HLS / Direct MP4 Stream ─────────────────── */
-      type === "hls" ? (
+      /* ── Direct MP4 / HLS Stream ─────────────────── */
+      (activeType === "hls" || activeType === "direct") ? (
         <div className="relative h-full w-full">
           {/* @ts-ignore */}
           <Player
