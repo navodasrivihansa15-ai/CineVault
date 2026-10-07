@@ -64,6 +64,7 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
       ref={containerRef}
       className="relative flex h-full w-full items-center justify-center bg-black group overflow-hidden rounded-2xl border border-white/5 shadow-cinematic"
     >
+      {/* ── YouTube Embed ────────────────────────────── */}
       {activeType === "youtube" && ytId ? (
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&color=white`}
@@ -71,7 +72,10 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
           allowFullScreen
           className="h-full w-full border-0"
         />
-      ) : activeType === "gdrive" ? (
+      ) : 
+
+      /* ── Google Drive Embed ──────────────────────── */}
+      activeType === "gdrive" ? (
         <div className="h-full w-full relative">
           <iframe
             src={getGDriveUrl(url)}
@@ -86,7 +90,10 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
             </div>
           )}
         </div>
-      ) : activeType === "iframe" ? (
+      ) :
+
+      /* ── Secure Sandboxed Iframe (Legacy/Fallback) ── */
+      activeType === "iframe" ? (
         <div className="h-full w-full relative">
           <div className="absolute top-4 left-4 z-10 flex items-center gap-2 rounded-lg bg-black/60 px-3 py-1.5 text-xs text-silver backdrop-blur-md">
             <AlertCircle size={14} className="text-gold" />
@@ -94,6 +101,7 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
           </div>
           <iframe
             src={url}
+            // CRITICAL SECURITY: Sandboxing blocks popup ads and malicious redirects
             sandbox="allow-scripts allow-same-origin allow-forms"
             allowFullScreen
             className="h-full w-full border-0 bg-black"
@@ -106,7 +114,10 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
             </div>
           )}
         </div>
-      ) : (activeType === "hls" || activeType === "direct") ? (
+      ) : 
+
+      /* ── Direct MP4 / HLS Stream ─────────────────── */
+      (activeType === "hls" || activeType === "direct") ? (
         <div className="relative h-full w-full">
           {/* @ts-ignore */}
           <Player
@@ -117,17 +128,20 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
             muted={muted}
             width="100%"
             height="100%"
-            controls={false}
+            controls={false} // Disable default controls to use custom ones
             onReady={() => setLoaded(true)}
             onError={() => setError(true)}
             style={{ position: 'absolute', top: 0, left: 0 }}
           />
           
+          {/* Custom Controls Overlay */}
           <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-transparent to-black/30 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            {/* Top Bar */}
             <div className="absolute top-0 left-0 right-0 p-4">
               <h2 className="text-lg font-bold text-white drop-shadow-md">{title}</h2>
             </div>
 
+            {/* Bottom Bar */}
             <div className="flex items-center gap-4 p-4 text-silver">
               <button 
                 onClick={() => setPlaying(!playing)}
@@ -157,7 +171,7 @@ export default function UniversalPlayer({ url, type, title }: UniversalPlayerPro
                 />
               </div>
 
-              <div className="flex-1" />
+              <div className="flex-1" /> {/* Spacer */}
 
               <button 
                 onClick={handleFullscreen}

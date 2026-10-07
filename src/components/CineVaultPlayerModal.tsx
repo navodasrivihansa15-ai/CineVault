@@ -522,16 +522,9 @@ export default function CineVaultPlayerModal({
             <>
               {/* Admin Edit UI */}
               {isAdmin && editMode ? (
-                <>
-                  {/* Full-screen semi-transparent backdrop/overlay for mobile */}
-                  <div 
-                    className="md:hidden fixed inset-0 z-[9998]" 
-                    style={{ background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(5px)' }} 
-                  />
-                  
-                  <div className="p-8 max-md:fixed max-md:top-1/2 max-md:left-1/2 max-md:-translate-x-1/2 max-md:-translate-y-1/2 max-md:z-[9999] max-md:w-[90%] max-md:p-0 max-md:max-h-[90vh] max-md:overflow-y-auto">
-                    <div className="rounded-2xl border border-gold/30 bg-gold/5 p-8 max-md:p-5 max-md:bg-[#0B0C10] backdrop-blur-md shadow-inner">
-                      <h3 className="text-xl font-bold text-gold flex items-center gap-2 mb-2">
+                <div className="p-8">
+                  <div className="rounded-2xl border border-gold/30 bg-gold/5 p-8 backdrop-blur-md shadow-inner">
+                    <h3 className="text-xl font-bold text-gold flex items-center gap-2 mb-2">
                       <Shield size={22} /> Configure Premium Source
                     </h3>
                     <p className="text-sm text-silver-light mb-8">
@@ -685,7 +678,6 @@ export default function CineVaultPlayerModal({
                     </form>
                   </div>
                 </div>
-                </>
               ) : streamUrl ? (
                 /* The Player */
                 <div className="relative aspect-video w-full bg-black group/player overflow-hidden">
